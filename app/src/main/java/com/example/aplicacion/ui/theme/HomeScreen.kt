@@ -35,6 +35,7 @@ fun HomeScreen(){
             Button(onClick = {/*ACCIONNNN*/}){
                 Text("Presióname")
             }
+            /*
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "Logo App",
@@ -43,6 +44,7 @@ fun HomeScreen(){
                     .height(150.dp),
                 contentScale = ContentScale.Fit
             )
+            */
         }
     }
 }
