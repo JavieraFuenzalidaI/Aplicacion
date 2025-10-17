@@ -56,6 +56,7 @@ fun HomeScreen(navController: NavHostController) {
                             .width(150.dp)
                             .height(70.dp)
                             .clickable {
+                                navController.navigate("login")
                                 // Ejemplo: ir también a la pantalla mascota si lo deseas
                                 //navController.navigate("iniciarSesion")
                             },
