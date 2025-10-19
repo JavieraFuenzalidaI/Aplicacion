@@ -72,7 +72,10 @@ fun HomeScreen(navController: NavHostController) {
                         modifier = Modifier
                             .width(150.dp)
                             .height(70.dp)
-                            .clickable {
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ){
                                 // Otra acción
                             },
                         contentScale = ContentScale.Fit

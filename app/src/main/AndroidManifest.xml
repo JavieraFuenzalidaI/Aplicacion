@@ -4,7 +4,7 @@
 
     <application
         android:allowBackup="true"
-        android:label="Aplicacion"
+        android:label="Taski Pet ♡"
         android:supportsRtl="true"
         android:theme="@style/Theme.Aplicacion"
         android:icon="@mipmap/logo_app"
@@ -13,7 +13,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="Aplicacion">
+            android:label="Taski Pet ♡">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
