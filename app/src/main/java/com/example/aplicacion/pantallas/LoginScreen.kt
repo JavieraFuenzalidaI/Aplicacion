@@ -1,79 +1,125 @@
 package com.example.aplicacion.pantallas
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.example.aplicacion.R
 
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavHostController) {
     // Variables de estado para los campos de texto
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-
-    // Diseño de la pantalla
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Campo de texto para el nombre de usuario
-        TextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("Usuario") },
-            modifier = Modifier.fillMaxWidth(),
-            isError = errorMessage.isNotEmpty()
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ){
+        Image(
+            painter = painterResource(id = R.drawable.fondo_iniciar_sesion),
+            contentDescription = "Fondo Login",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
         )
-
-        // Campo de texto para la contraseña
-        Spacer(modifier = Modifier.height(16.dp))
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-            isError = errorMessage.isNotEmpty()
-        )
-
-        // Mostrar mensaje de error si es necesario
-        if (errorMessage.isNotEmpty()) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-
-        // Botón de login
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = {
-                if (username == "admin" && password == "1234") {
-                    navController.navigate("mascota") // Si el login es correcto
-                } else {
-                    errorMessage = "Usuario o contraseña incorrectos"
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
+        // Diseño de la pantalla
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text("Iniciar sesión")
-        }
-    }
-}
+            // Campo de texto para el nombre de usuario
+            OutlinedTextField(
+                value = username,
+                onValueChange = { username = it },
+                label = { Text("Usuario") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFFFFAB91),
+                    unfocusedBorderColor = Color(0xFFFFCCBC),
+                    cursorColor = Color(0xFF6D4C41),
+                    focusedLabelColor = Color(0xFF6D4C41)
+                )
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = username,
+                onValueChange = { password = it },
+                label = { Text("Contraseña") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFFFFAB91),
+                    unfocusedBorderColor = Color(0xFFFFCCBC),
+                    cursorColor = Color(0xFF6D4C41),
+                    focusedLabelColor = Color(0xFF6D4C41)
+                )
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Mostrar mensaje de error si es necesario
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            // Botón de login
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.iniciar_sesion_btn),
+                contentDescription = "Botón Iniciar sesión",
+                modifier = Modifier
+                    .width(180.dp)
+                    .height(80.dp)
+                    .clickable {
+                        if (username == "admin" && password == "1234") {
+                            navController.navigate("mascota")
+                        } else {
+                            errorMessage = "Usuario o contraseña incorrectos"
+                        }
+                    },
+                contentScale = ContentScale.Fit
+            )
+
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }//fin column
+    }// fin box
+} // fin fun
+
 
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
+    val navController = rememberNavController()
+    LoginScreen(navController)
 }

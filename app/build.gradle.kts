@@ -8,6 +8,10 @@ android {
     namespace = "com.example.aplicacion"
     compileSdk = 36
 
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.7.2"
+    }
+
     defaultConfig {
         applicationId = "com.example.aplicacion"
         minSdk = 24
@@ -58,4 +62,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("androidx.compose.runtime:runtime:1.7.2")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.compose.material:material-icons-extended:1.7.2")
 }
