@@ -14,6 +14,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.runtime.remember
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,12 +57,12 @@ fun HomeScreen(navController: NavHostController) {
                         modifier = Modifier
                             .width(150.dp)
                             .height(70.dp)
-                            .clickable {
+                            .clickable(
+                                 indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) {
                                 navController.navigate("login")
-                                // Ejemplo: ir también a la pantalla mascota si lo deseas
-                                //navController.navigate("iniciarSesion")
                             },
-                        contentScale = ContentScale.Fit
                     )
 
                     // ---- Botón Registrarse ----
