@@ -25,10 +25,6 @@ fun HomeScreen(navController: NavHostController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .clickable {
-                    // Al tocar cualquier parte de la pantalla → ir a PantallaMascota
-                    navController.navigate("mascota")
-                }
         ) {
             // 🔹 Fondo general
             Image(
