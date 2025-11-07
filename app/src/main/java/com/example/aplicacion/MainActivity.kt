@@ -39,6 +39,9 @@ class MainActivity : ComponentActivity() {
                     val username = backStackEntry.arguments?.getString("username") ?: "Usuario"
                     SesionIniciadaScreen(navController, username)
                 }
+
+                composable("register")
+                    { RegisterScreen(navController) }
             }
             }
         }
