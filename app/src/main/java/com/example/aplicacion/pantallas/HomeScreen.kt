@@ -72,7 +72,7 @@ fun HomeScreen(navController: NavHostController) {
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() }
                             ){
-                                // Otra acción
+                                navController.navigate("register")
                             },
                         contentScale = ContentScale.Fit
                     )
