@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -24,9 +25,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -42,6 +47,10 @@ fun LoginScreen(navController: NavHostController) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+
+    val passwordFocusRequest = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+
     Box(
         modifier = Modifier.fillMaxSize()
     ){
@@ -70,24 +79,47 @@ fun LoginScreen(navController: NavHostController) {
                     unfocusedBorderColor = Color(0xFFFFCCBC),
                     cursorColor = Color(0xFF6D4C41),
                     focusedLabelColor = Color(0xFF6D4C41)
+                ),
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = {passwordFocusRequest.requestFocus()}
                 )
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Contraseña") },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(passwordFocusRequest),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFFFFAB91),
                     unfocusedBorderColor = Color(0xFFFFCCBC),
                     cursorColor = Color(0xFF6D4C41),
                     focusedLabelColor = Color(0xFF6D4C41)
                 ),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if(username == "admin" && password =="1234"){
+                            navController.navigate("sesion_iniciada/${username}")
+                        }else{
+                            errorMessage="Usuario o contraseña incorrectos"
+                        }
+                        focusManager.clearFocus()
+                    }
+                ),
                 visualTransformation = PasswordVisualTransformation()
             )
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Mostrar mensaje de error si es necesario
@@ -120,13 +152,16 @@ fun LoginScreen(navController: NavHostController) {
                 contentScale = ContentScale.Fit
             )
 
-            if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+            Text(
+                    text = "¿No tienes cuenta? Regístrate",
+            color = Color(0xFF6D4C41),
+            modifier = Modifier.clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
+            ) {
+                navController.navigate("register")
             }
+            )
         }//fin column
     }// fin box
 } // fin fun
