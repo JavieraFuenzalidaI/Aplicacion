@@ -13,7 +13,9 @@ import com.example.aplicacion.pantallas.HomeScreen
 import com.example.aplicacion.pantallas.LoginScreen
 import com.example.aplicacion.pantallas.PantallaMascota
 import com.example.aplicacion.pantallas.SesionIniciadaScreen
+import com.example.aplicacion.pantallas.RegisterScreen
 import com.example.aplicacion.ui.theme.TaskiPetTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

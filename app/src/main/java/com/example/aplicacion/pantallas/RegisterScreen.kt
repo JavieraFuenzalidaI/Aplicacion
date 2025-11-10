@@ -101,9 +101,9 @@ fun RegisterScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Crear cuenta",
-                color = Color(0xFF6D4C41)
+            Image(
+                painter = painterResource(id = R.drawable.img_crear_cuenta),
+                "Texto crear cuenta",
             )
 
             Spacer(modifier = Modifier.height(24.dp))
