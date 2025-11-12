@@ -45,11 +45,11 @@ fun RegisterScreen(navController: NavHostController) {
     val focusManager = LocalFocusManager.current
     val passwordFocusRequester = remember { FocusRequester() }
 
-    // --- 🔹 ViewModel y Repository ---
+// --- 🔹 ViewModel y Repository ---
     val repository = remember { UsuarioRepository(context) }
     val viewModel: RegistroViewModel = viewModel(factory = RegistroViewModelFactory(repository))
 
-    // --- 🔹 Estados del formulario ---
+// --- 🔹 Estados del formulario ---
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -88,7 +88,7 @@ fun RegisterScreen(navController: NavHostController) {
         return valid
     }
 
-    // --- 🔹 UI ---
+// --- 🔹 UI ---
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.fondo_iniciar_sesion),
@@ -188,7 +188,7 @@ fun RegisterScreen(navController: NavHostController) {
                     .clickable { datePickerDialog.show() },
                 enabled = false,
                 colors = OutlinedTextFieldDefaults.colors(
-                    disabledBorderColor = Color(0xFFFFCCBC),
+                    disabledBorderColor = Color(0xFFF0DCD8),
                     disabledLabelColor = Color(0xFF6D4C41),
                     disabledTextColor = Color.Black
                 )
@@ -216,7 +216,7 @@ fun RegisterScreen(navController: NavHostController) {
                         }
                     }
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFAB91)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0DCD8)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)

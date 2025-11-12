@@ -71,12 +71,6 @@ fun LoginScreen(navController: NavHostController) {
                 onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFFFFAB91),
-                    unfocusedBorderColor = Color(0xFFFFCCBC),
-                    cursorColor = Color(0xFF6D4C41),
-                    focusedLabelColor = Color(0xFF6D4C41)
-                ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
@@ -96,12 +90,6 @@ fun LoginScreen(navController: NavHostController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(passwordFocusRequest),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFFFFAB91),
-                    unfocusedBorderColor = Color(0xFFFFCCBC),
-                    cursorColor = Color(0xFF6D4C41),
-                    focusedLabelColor = Color(0xFF6D4C41)
-                ),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
@@ -167,7 +155,7 @@ fun LoginScreen(navController: NavHostController) {
 
             Text(
                 text = "¿No tienes cuenta? Regístrate",
-                color = Color(0xFF6D4C41),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() }
@@ -183,5 +171,7 @@ fun LoginScreen(navController: NavHostController) {
 @Composable
 fun LoginScreenPreview() {
     val navController = rememberNavController()
-    LoginScreen(navController)
+    com.example.aplicacion.ui.theme.TaskiPetTheme {
+        LoginScreen(navController)
+    }
 }
