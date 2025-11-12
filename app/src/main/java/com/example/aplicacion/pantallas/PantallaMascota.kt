@@ -27,7 +27,7 @@ import com.example.aplicacion.model.Usuario
 @Composable
 fun PantallaMascota(
     navController: NavHostController,
-    usuario: Usuario // 👈 pasamos el usuario logueado
+    usuario: Usuario
 ) {
     val context = LocalContext.current
     val repo = remember { UsuarioRepository(context) }
@@ -97,7 +97,7 @@ fun PantallaMascota(
         // Botón regreso
         IconButton(
             onClick = {
-                navController.navigate("sesion_iniciada") {
+                navController.navigate("sesion_iniciada/${usuario.correo}") {
                     popUpTo(0)
                 }
             },
@@ -108,11 +108,11 @@ fun PantallaMascota(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.btn_regreso_icon),
-                contentDescription = "Volver al inicio"
+                contentDescription = "Volver a sesion iniciada"
             )
         }
 
-        /** 📋 Icono de tareas **/
+        //Icono de tareas
         IconButton(
             onClick = {
                 tareasSugeridas = sugeridas.shuffled().take(3)
@@ -130,7 +130,7 @@ fun PantallaMascota(
             )
         }
 
-        /** 📋 Panel de tareas **/
+        //tareas
         var nuevaTarea by remember { mutableStateOf("") }
 
         AnimatedVisibility(
@@ -162,7 +162,7 @@ fun PantallaMascota(
 
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
 
-                    /** Lista de tareas **/
+                    //Lista de tareas
                     todasLasTareas.forEach { tarea ->
                         var checked by remember { mutableStateOf(false) }
                         Row(

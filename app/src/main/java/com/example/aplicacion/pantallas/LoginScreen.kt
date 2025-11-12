@@ -37,6 +37,7 @@ fun LoginScreen(navController: NavHostController) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val passwordFocusRequest = remember { FocusRequester() }
+    val sesionManager = remember { com.example.aplicacion.data.SesionManager(context) }
 
     // --- ViewModel y Repository ---
     val repository = remember { UsuarioRepository(context) }
@@ -64,7 +65,7 @@ fun LoginScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // --- Campo de correo ---
+            // Campo de correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -87,7 +88,7 @@ fun LoginScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Campo de contraseña ---
+            // contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -122,7 +123,7 @@ fun LoginScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Mensaje de error ---
+            // error
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
@@ -134,6 +135,7 @@ fun LoginScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- Botón de inicio de sesión ---
+
             Image(
                 painter = painterResource(id = R.drawable.iniciar_sesion_btn),
                 contentDescription = "Botón Iniciar sesión",
@@ -147,6 +149,8 @@ fun LoginScreen(navController: NavHostController) {
                         if (email.isNotBlank() && password.isNotBlank()) {
                             val usuario = viewModel.iniciarSesion(email, password)
                             if (usuario != null) {
+                                //aki se guarda la sesión
+                                sesionManager.guardarSesion(usuario.correo)
                                 Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
                                 navController.navigate("sesion_iniciada/${usuario.correo}")
                             } else {
