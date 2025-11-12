@@ -25,7 +25,7 @@ fun SesionIniciadaScreen(
         modifier = Modifier
             .fillMaxSize()
             .clickable {
-                navController.navigate("mascota")
+                navController.navigate("mascota/$username")
             }
     ) {
         Image(

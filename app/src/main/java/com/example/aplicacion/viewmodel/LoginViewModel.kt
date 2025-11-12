@@ -3,10 +3,11 @@ package com.example.aplicacion.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.aplicacion.data.UsuarioRepository
+import com.example.aplicacion.model.Usuario
 
 class LoginViewModel(private val repository: UsuarioRepository) : ViewModel() {
 
-    fun iniciarSesion(correo: String, contrasena: String): Boolean {
+    fun iniciarSesion(correo: String, contrasena: String): Usuario? {
         return repository.validarUsuario(correo, contrasena)
     }
 }

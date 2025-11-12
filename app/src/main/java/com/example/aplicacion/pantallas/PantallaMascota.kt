@@ -1,54 +1,43 @@
 package com.example.aplicacion.pantallas
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.aplicacion.R
-import androidx.navigation.NavHostController
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.TextFieldColors
 import androidx.compose.ui.zIndex
+import androidx.navigation.NavHostController
+import com.example.aplicacion.R
+import com.example.aplicacion.data.UsuarioRepository
+import com.example.aplicacion.model.Usuario
 
 @Composable
-fun PantallaMascota(navController: NavHostController) {
-    var nivelMascota by remember { mutableStateOf(20) }
+fun PantallaMascota(
+    navController: NavHostController,
+    usuario: Usuario // 👈 pasamos el usuario logueado
+) {
+    val context = LocalContext.current
+    val repo = remember { UsuarioRepository(context) }
+
+    // cargar nivel y tareas de la BD del usuario actual
+    var nivelMascota by remember { mutableStateOf(usuario.nivelMascota) }
+    var tareasPersonalizadas by remember { mutableStateOf(repo.obtenerTareasUsuario(usuario.id)) }
     var menuExpandido by remember { mutableStateOf(false) }
 
-    // Selecciona imágenes según nivel
+    // 🖼 imágenes según nivel
     val corazonRes = when (nivelMascota) {
         in 0..20 -> R.drawable.corazon_0_20
         in 21..40 -> R.drawable.corazon_20_40
@@ -65,36 +54,17 @@ fun PantallaMascota(navController: NavHostController) {
         else -> R.drawable.av_gato_80_100
     }
 
-    val todasLasTareas = listOf(
+    // lista de sugerencias fijas
+    val sugeridas = listOf(
         "Alimenta al gatito" to 10,
-        "Hacer la cama " to 5,
+        "Hacer la cama" to 5,
         "Cepillarse los dientes" to 5,
         "Estudio" to 20,
-        "Hacer la cama" to 5,
         "Ordenar tu escritorio" to 10,
-        "Lavar los platos" to 10,
-        "Limpiar tu habitación" to 15,
-        "Sacar la basura" to 10,
-        "Regar las plantas" to 10,
-        "Levantarte a tiempo" to 5,
-        "Acomodar tu espacio" to 5,
-        "Prepararte un desayuno saludable" to 10,
-        "Tomar agua" to 5,
-        "Salir a tomar aire o sol unos minutos" to 10,
-        "Hacer estiramientos o yoga" to 10,
-        "Darte un descanso sin pantallas" to 5,
-        "Estudiar 30 minutos" to 15,
-        "Organizar tus apuntes" to 10,
-        "Anotar tus pendientes del día" to 5,
-        "Completar una tarea o trabajo" to 20,
-        "Leer un capítulo de un libro" to 5,
-        "Aprender algo nuevo hoy" to 15,
-        "Enviar un mensaje lindo a alguien" to 5,
-        "Pasar tiempo con familia o amigos" to 10,
-        "Ayudar a alguien con algo" to 20,
-        "Sonreírle a alguien (o a tu mascota :0)" to 5,
-        "Compartir algo positivo en redes" to 5,
-        )
+        "Tomar agua" to 5
+    )
+    // 3 random
+    var tareasSugeridas by remember { mutableStateOf(sugeridas.shuffled().take(3)) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Fondo
@@ -104,13 +74,6 @@ fun PantallaMascota(navController: NavHostController) {
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
-        // misiones randoms :3
-        var tareasMostradas by remember { mutableStateOf(todasLasTareas.shuffled().take(3)) }
-        // tareas personalizadas
-        var nuevaTarea by remember { mutableStateOf("") }
-        var tareasPersonalizadas by remember { mutableStateOf(listOf<Pair<String, Int>>()) }
-
 
         // Corazón
         Image(
@@ -131,7 +94,7 @@ fun PantallaMascota(navController: NavHostController) {
                 .padding(bottom = 65.dp)
         )
 
-        //Botón regreso
+        // Botón regreso
         IconButton(
             onClick = {
                 navController.navigate("sesion_iniciada") {
@@ -149,9 +112,12 @@ fun PantallaMascota(navController: NavHostController) {
             )
         }
 
-        // tareas
+        /** 📋 Icono de tareas **/
         IconButton(
-            onClick = { menuExpandido = !menuExpandido },
+            onClick = {
+                tareasSugeridas = sugeridas.shuffled().take(3)
+                menuExpandido = !menuExpandido
+            },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(30.dp)
@@ -164,8 +130,9 @@ fun PantallaMascota(navController: NavHostController) {
             )
         }
 
+        /** 📋 Panel de tareas **/
+        var nuevaTarea by remember { mutableStateOf("") }
 
-        // tareas waa
         AnimatedVisibility(
             visible = menuExpandido,
             modifier = Modifier
@@ -180,10 +147,7 @@ fun PantallaMascota(navController: NavHostController) {
                 border = BorderStroke(2.dp, Color.White),
                 modifier = Modifier.width(260.dp)
             ) {
-
-                val todasLasTareasMostradas = remember(tareasPersonalizadas) {
-                    tareasMostradas + tareasPersonalizadas
-                }
+                val todasLasTareas = tareasSugeridas + tareasPersonalizadas
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -198,9 +162,9 @@ fun PantallaMascota(navController: NavHostController) {
 
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
 
-                    todasLasTareasMostradas.forEach { tarea ->
+                    /** Lista de tareas **/
+                    todasLasTareas.forEach { tarea ->
                         var checked by remember { mutableStateOf(false) }
-
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -210,6 +174,7 @@ fun PantallaMascota(navController: NavHostController) {
                                     if (!checked) {
                                         nivelMascota =
                                             (nivelMascota + tarea.second).coerceAtMost(100)
+                                        repo.actualizarNivelUsuario(usuario.id, nivelMascota)
                                         checked = true
                                     }
                                 }
@@ -220,6 +185,7 @@ fun PantallaMascota(navController: NavHostController) {
                                     if (!checked) {
                                         nivelMascota =
                                             (nivelMascota + tarea.second).coerceAtMost(100)
+                                        repo.actualizarNivelUsuario(usuario.id, nivelMascota)
                                     }
                                     checked = it
                                 },
@@ -239,6 +205,7 @@ fun PantallaMascota(navController: NavHostController) {
 
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
 
+                    /** Campo para nueva tarea **/
                     OutlinedTextField(
                         value = nuevaTarea,
                         onValueChange = { nuevaTarea = it },
@@ -255,11 +222,14 @@ fun PantallaMascota(navController: NavHostController) {
                         )
                     )
 
+                    /** Botón agregar **/
                     Button(
                         onClick = {
                             val puntos = (20..30).random()
                             if (nuevaTarea.isNotBlank()) {
-                                tareasPersonalizadas = tareasPersonalizadas + (nuevaTarea to puntos)
+                                repo.insertarTarea(usuario.id, nuevaTarea, puntos)
+                                tareasPersonalizadas =
+                                    repo.obtenerTareasUsuario(usuario.id)
                                 nuevaTarea = ""
                             }
                         },
@@ -273,6 +243,5 @@ fun PantallaMascota(navController: NavHostController) {
                 }
             }
         }
-
-    }//fin?
-}//fin
+    }
+}

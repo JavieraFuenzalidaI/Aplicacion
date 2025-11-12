@@ -107,16 +107,12 @@ fun LoginScreen(navController: NavHostController) {
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        if (email.isNotBlank() && password.isNotBlank()) {
-                            val exito = viewModel.iniciarSesion(email, password)
-                            if (exito) {
-                                Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                                navController.navigate("sesion_iniciada/${email}")
-                            } else {
-                                errorMessage = "Correo o contraseña incorrectos"
-                            }
+                        val usuario = viewModel.iniciarSesion(email, password)
+                        if (usuario != null) {
+                            Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                            navController.navigate("sesion_iniciada/${usuario.correo}")
                         } else {
-                            errorMessage = "Completa todos los campos"
+                            errorMessage = "Correo o contraseña incorrectos"
                         }
                         focusManager.clearFocus()
                     }
@@ -149,10 +145,10 @@ fun LoginScreen(navController: NavHostController) {
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
                         if (email.isNotBlank() && password.isNotBlank()) {
-                            val exito = viewModel.iniciarSesion(email, password)
-                            if (exito) {
+                            val usuario = viewModel.iniciarSesion(email, password)
+                            if (usuario != null) {
                                 Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                                navController.navigate("sesion_iniciada/${email}")
+                                navController.navigate("sesion_iniciada/${usuario.correo}")
                             } else {
                                 errorMessage = "Correo o contraseña incorrectos"
                             }
