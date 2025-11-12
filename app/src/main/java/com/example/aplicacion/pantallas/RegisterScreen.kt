@@ -29,6 +29,15 @@ import androidx.navigation.compose.rememberNavController
 import com.example.aplicacion.R
 import java.util.Calendar
 import java.util.regex.Pattern
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aplicacion.data.UsuarioRepository
+import com.example.aplicacion.viewmodel.RegistroViewModel
+import com.example.aplicacion.viewmodel.RegistroViewModelFactory
 
 @Composable
 fun RegisterScreen(navController: NavHostController) {
@@ -36,6 +45,11 @@ fun RegisterScreen(navController: NavHostController) {
     val focusManager = LocalFocusManager.current
     val passwordFocusRequester = remember { FocusRequester() }
 
+    // --- 🔹 ViewModel y Repository ---
+    val repository = remember { UsuarioRepository(context) }
+    val viewModel: RegistroViewModel = viewModel(factory = RegistroViewModelFactory(repository))
+
+    // --- 🔹 Estados del formulario ---
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -49,43 +63,32 @@ fun RegisterScreen(navController: NavHostController) {
     fun validateFields(): Boolean {
         var valid = true
 
-        // Validar nombre de usuario
         if (username.isBlank()) {
             usernameError = "El nombre de usuario no puede estar vacío"
             valid = false
-        } else {
-            usernameError = ""
-        }
+        } else usernameError = ""
 
-        // Validar email
-        val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@gmail.com+$")
+        val emailPattern = Pattern.compile("^[A-Za-z0-9+_.-]+@gmail\\.com$")
         if (!emailPattern.matcher(email).matches()) {
-            emailError = "Correo electrónico inválido"
+            emailError = "Correo electrónico inválido (usa @gmail.com)"
             valid = false
-        } else {
-            emailError = ""
-        }
+        } else emailError = ""
 
-        // Validar contraseña
         val passwordPattern = Pattern.compile("^(?=.*[0-9]).{6,}$")
         if (!passwordPattern.matcher(password).matches()) {
             passwordError = "Mínimo 6 caracteres y al menos un número"
             valid = false
-        } else {
-            passwordError = ""
-        }
+        } else passwordError = ""
 
-        // Validar fecha
         if (birthday.isBlank()) {
             birthdayError = "Selecciona tu fecha de nacimiento"
             valid = false
-        } else {
-            birthdayError = ""
-        }
+        } else birthdayError = ""
 
         return valid
     }
 
+    // --- 🔹 UI ---
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.fondo_iniciar_sesion),
@@ -103,12 +106,12 @@ fun RegisterScreen(navController: NavHostController) {
         ) {
             Image(
                 painter = painterResource(id = R.drawable.img_crear_cuenta),
-                "Texto crear cuenta",
+                contentDescription = "Texto crear cuenta"
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nombre de usuario
+            // --- Nombre de usuario ---
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
@@ -118,13 +121,12 @@ fun RegisterScreen(navController: NavHostController) {
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) })
             )
-            if (usernameError.isNotEmpty()) {
+            if (usernameError.isNotEmpty())
                 Text(usernameError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Correo
+            // --- Correo ---
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -137,13 +139,12 @@ fun RegisterScreen(navController: NavHostController) {
                 ),
                 keyboardActions = KeyboardActions(onNext = { passwordFocusRequester.requestFocus() })
             )
-            if (emailError.isNotEmpty()) {
+            if (emailError.isNotEmpty())
                 Text(emailError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Contraseña
+            // --- Contraseña ---
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -159,13 +160,12 @@ fun RegisterScreen(navController: NavHostController) {
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardActions = KeyboardActions(onNext = { focusManager.clearFocus() })
             )
-            if (passwordError.isNotEmpty()) {
+            if (passwordError.isNotEmpty())
                 Text(passwordError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Fecha de nacimiento
+            // --- Fecha de nacimiento ---
             val calendar = Calendar.getInstance()
             val year = calendar.get(Calendar.YEAR)
             val month = calendar.get(Calendar.MONTH)
@@ -176,9 +176,7 @@ fun RegisterScreen(navController: NavHostController) {
                 { _, selectedYear, selectedMonth, selectedDay ->
                     birthday = "$selectedDay/${selectedMonth + 1}/$selectedYear"
                 },
-                year,
-                month,
-                day
+                year, month, day
             )
 
             OutlinedTextField(
@@ -187,9 +185,7 @@ fun RegisterScreen(navController: NavHostController) {
                 label = { Text("Fecha de nacimiento") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        datePickerDialog.show()
-                    },
+                    .clickable { datePickerDialog.show() },
                 enabled = false,
                 colors = OutlinedTextFieldDefaults.colors(
                     disabledBorderColor = Color(0xFFFFCCBC),
@@ -197,23 +193,30 @@ fun RegisterScreen(navController: NavHostController) {
                     disabledTextColor = Color.Black
                 )
             )
-            if (birthdayError.isNotEmpty()) {
+            if (birthdayError.isNotEmpty())
                 Text(birthdayError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón de registro
+            // --- Botón de registro ---
             Button(
                 onClick = {
                     if (validateFields()) {
-                        Toast.makeText(context, "¡Registro exitoso!", Toast.LENGTH_SHORT).show()
-                        navController.navigate("login")
+                        val exito = viewModel.registrarUsuario(username, email, password, birthday)
+                        if (exito) {
+                            Toast.makeText(context, "¡Usuario registrado correctamente!", Toast.LENGTH_SHORT).show()
+                            // Limpia campos
+                            username = ""
+                            email = ""
+                            password = ""
+                            birthday = ""
+                            navController.navigate("login")
+                        } else {
+                            Toast.makeText(context, "Error al registrar usuario (correo ya registrado)", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFAB91)
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFAB91)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
