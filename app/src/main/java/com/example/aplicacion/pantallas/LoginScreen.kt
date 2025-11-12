@@ -38,11 +38,11 @@ fun LoginScreen(navController: NavHostController) {
     val focusManager = LocalFocusManager.current
     val passwordFocusRequest = remember { FocusRequester() }
 
-    // --- 🔹 ViewModel y Repository ---
+    // --- ViewModel y Repository ---
     val repository = remember { UsuarioRepository(context) }
     val viewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory(repository))
 
-    // --- 🔹 Estados de UI ---
+    // --- Estados de UI ---
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
