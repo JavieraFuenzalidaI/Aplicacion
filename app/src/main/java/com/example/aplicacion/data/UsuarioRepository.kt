@@ -100,4 +100,37 @@ class UsuarioRepository(context: Context) {
         db.close()
         return lista
     }
-}
+
+    fun borrarTareasUsuario(idUsuario: Int) {
+        val db = dbHelper.writableDatabase
+        db.delete(
+            UsuarioDbHelper.TABLE_TAREAS,
+            "${UsuarioDbHelper.COLUMN_TAREA_USUARIO_ID} = ?",
+            arrayOf(idUsuario.toString())
+        )
+        db.close()
+    }
+
+    fun obtenerUsuarioPorId(idUsuario: Int): Usuario? {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT * FROM ${UsuarioDbHelper.TABLE_USUARIOS} WHERE ${UsuarioDbHelper.COLUMN_ID} = ?",
+            arrayOf(idUsuario.toString())
+        )
+        var usuario: Usuario? = null
+        if (cursor.moveToFirst()) {
+            usuario = Usuario(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_ID)),
+                nombre = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NOMBRE)),
+                correo = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CORREO)),
+                contrasena = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CONTRASENA)),
+                fechaNacimiento = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_FECHA)),
+                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL))
+            )
+        }
+        cursor.close()
+        db.close()
+        return usuario
+    }
+}//fin clase
+

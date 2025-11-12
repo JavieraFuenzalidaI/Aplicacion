@@ -1,6 +1,5 @@
 package com.example.aplicacion.pantallas
 
-import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -21,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
+import com.example.aplicacion.data.PreferenciasDiarias
 import com.example.aplicacion.data.UsuarioRepository
 import com.example.aplicacion.model.Usuario
 
@@ -32,12 +32,70 @@ fun PantallaMascota(
     val context = LocalContext.current
     val repo = remember { UsuarioRepository(context) }
 
-    // cargar nivel y tareas de la BD del usuario actual
-    var nivelMascota by remember { mutableStateOf(usuario.nivelMascota) }
+    // tareas sugeridas
+    // lista de sugerencias fijas
+    val sugeridas = listOf(
+        "Alimenta al gatito" to 10,
+        "Hacer la cama" to 5,
+        "Cepillarse los dientes" to 5,
+        "Estudio" to 20,
+        "Ordenar tu escritorio" to 10,
+        "Tomar agua" to 5,
+        "Regar las plantas" to 10,
+        "Sacar la basura" to 10,
+        "Preparar tu mochila" to 5,
+        "Leer un capítulo de un libro" to 15,
+        "Lavar los platos" to 10,
+        "Acariciar al gato" to 5,
+        "Hacer ejercicio" to 20,
+        "Meditar 5 minutos" to 10,
+        "Guardar la ropa limpia" to 10,
+        "Ayudar en casa" to 15,
+        "Evitar el celular por 30 minutos" to 10,
+        "Comer una fruta" to 5,
+        "Limpiar tu habitación" to 15,
+        "Practicar un hobby" to 15,
+        "Revisar tus metas del día" to 5,
+        "Planificar el día" to 10,
+        "Revisar tus pendientes" to 10,
+        "Responder correos importantes" to 10,
+        "Asistir a una clase o reunión" to 15,
+        "Tomar apuntes organizados" to 10,
+        "Avanzar en un proyecto" to 15,
+        "Estudiar durante 30 minutos concentrado" to 15,
+        "Revisar y corregir tu trabajo" to 10,
+        "Actualizar tu agenda o calendario" to 10,
+        "Ordenar tu escritorio o espacio de trabajo" to 10,
+        "Guardar archivos o respaldar tu trabajo" to 10,
+        "Leer un artículo o documento de tu área" to 10,
+        "Practicar una habilidad profesional" to 15,
+        "Evitar distracciones durante 1 hora" to 10,
+        "Participar en clase o en una reunión" to 10,
+        "Resolver un problema o ejercicio difícil" to 15,
+        "Enviar una tarea o informe a tiempo" to 10,
+        "Configurar tus metas del día" to 5,
+        "Hacer una pausa activa breve" to 5,
+        "Evaluar tus logros del día" to 5
+    )
+
+    var nivelMascota by remember {
+        mutableStateOf(PreferenciasDiarias.reiniciarNivelSiEsNuevoDia(context, repo, usuario.id))
+    }
+
+    var tareasCompletadas by remember { mutableStateOf(mutableSetOf<String>()) }
+
+    // Tareas sugeridas actuales
+    var tareasSugeridas by remember {
+        mutableStateOf(
+            PreferenciasDiarias.obtenerTareasDelDia(context, sugeridas)
+                .filter { it.first !in tareasCompletadas }
+        )
+    }
+
     var tareasPersonalizadas by remember { mutableStateOf(repo.obtenerTareasUsuario(usuario.id)) }
     var menuExpandido by remember { mutableStateOf(false) }
 
-    // 🖼 imágenes según nivel
+    // imágenes según nivel
     val corazonRes = when (nivelMascota) {
         in 0..20 -> R.drawable.corazon_0_20
         in 21..40 -> R.drawable.corazon_20_40
@@ -54,18 +112,7 @@ fun PantallaMascota(
         else -> R.drawable.av_gato_80_100
     }
 
-    // lista de sugerencias fijas
-    val sugeridas = listOf(
-        "Alimenta al gatito" to 10,
-        "Hacer la cama" to 5,
-        "Cepillarse los dientes" to 5,
-        "Estudio" to 20,
-        "Ordenar tu escritorio" to 10,
-        "Tomar agua" to 5
-    )
-    // 3 random
-    var tareasSugeridas by remember { mutableStateOf(sugeridas.shuffled().take(3)) }
-
+    // UI general
     Box(modifier = Modifier.fillMaxSize()) {
         // Fondo
         Image(
@@ -81,7 +128,7 @@ fun PantallaMascota(
             contentDescription = "Estado de ánimo",
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 90.dp)
+                .padding(top = 150.dp)
                 .size(150.dp)
         )
 
@@ -91,7 +138,7 @@ fun PantallaMascota(
             contentDescription = "Mascota",
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 65.dp)
+                .padding(bottom = 65.dp, start = 20.dp)
         )
 
         // Botón regreso
@@ -112,10 +159,9 @@ fun PantallaMascota(
             )
         }
 
-        //Icono de tareas
+        // Icono de tareas
         IconButton(
             onClick = {
-                tareasSugeridas = sugeridas.shuffled().take(3)
                 menuExpandido = !menuExpandido
             },
             modifier = Modifier
@@ -130,9 +176,10 @@ fun PantallaMascota(
             )
         }
 
-        //tareas
+        // Campo nueva tarea
         var nuevaTarea by remember { mutableStateOf("") }
 
+        // Panel de tareas
         AnimatedVisibility(
             visible = menuExpandido,
             modifier = Modifier
@@ -163,8 +210,12 @@ fun PantallaMascota(
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
 
                     //Lista de tareas
+                    var estadosChecked by remember { mutableStateOf(mutableStateMapOf<String, Boolean>()) }
+
                     todasLasTareas.forEach { tarea ->
-                        var checked by remember { mutableStateOf(false) }
+                        val desc = tarea.first
+                        val checked = estadosChecked[desc] ?: false
+
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -172,22 +223,28 @@ fun PantallaMascota(
                                 .padding(vertical = 6.dp)
                                 .clickable {
                                     if (!checked) {
-                                        nivelMascota =
-                                            (nivelMascota + tarea.second).coerceAtMost(100)
+                                        nivelMascota = (nivelMascota + tarea.second).coerceAtMost(100)
                                         repo.actualizarNivelUsuario(usuario.id, nivelMascota)
-                                        checked = true
+                                        estadosChecked[desc] = true
+                                        if (desc in sugeridas.map { it.first }) {
+                                            tareasCompletadas.add(desc)
+                                        }
                                     }
                                 }
                         ) {
                             Checkbox(
                                 checked = checked,
-                                onCheckedChange = {
-                                    if (!checked) {
-                                        nivelMascota =
-                                            (nivelMascota + tarea.second).coerceAtMost(100)
+                                onCheckedChange = { nuevo ->
+                                    if (!checked && nuevo) {
+                                        nivelMascota = (nivelMascota + tarea.second).coerceAtMost(100)
                                         repo.actualizarNivelUsuario(usuario.id, nivelMascota)
+                                        estadosChecked[desc] = true
+                                        if (desc in sugeridas.map { it.first }) {
+                                            tareasCompletadas.add(desc)
+                                        }
+                                    } else if (!nuevo) {
+                                        estadosChecked[desc] = false
                                     }
-                                    checked = it
                                 },
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = Color(0xFF74C69D),
@@ -195,7 +252,7 @@ fun PantallaMascota(
                                 )
                             )
                             Text(
-                                text = tarea.first,
+                                text = desc,
                                 color = if (checked) Color(0x99755C48) else Color(0xFF755C48),
                                 textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None,
                                 fontSize = 14.sp
@@ -205,31 +262,24 @@ fun PantallaMascota(
 
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
 
-                    /** Campo para nueva tarea **/
+                    // Añadir nueva tarea
+                    var nuevaTarea by remember { mutableStateOf("") }
+
                     OutlinedTextField(
                         value = nuevaTarea,
                         onValueChange = { nuevaTarea = it },
                         placeholder = { Text("¿Qué más piensas hacer?") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        colors = TextFieldDefaults.colors(
-                            focusedIndicatorColor = Color(0xFF8B5C42),
-                            unfocusedIndicatorColor = Color(0xFF8B5C42),
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            cursorColor = Color(0xFF8B5C42)
-                        )
+                            .padding(top = 8.dp)
                     )
 
-                    /** Botón agregar **/
                     Button(
                         onClick = {
-                            val puntos = (20..30).random()
+                            val puntos = (5..15).random()
                             if (nuevaTarea.isNotBlank()) {
                                 repo.insertarTarea(usuario.id, nuevaTarea, puntos)
-                                tareasPersonalizadas =
-                                    repo.obtenerTareasUsuario(usuario.id)
+                                tareasPersonalizadas = repo.obtenerTareasUsuario(usuario.id)
                                 nuevaTarea = ""
                             }
                         },
@@ -239,6 +289,21 @@ fun PantallaMascota(
                             .padding(top = 8.dp)
                     ) {
                         Text("Agregar tarea", color = Color.White, fontSize = 13.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // refrescar sugeridas
+                    Button(
+                        onClick = {
+                            val restantes = sugeridas.filter { it.first !in tareasCompletadas }
+                            tareasSugeridas = restantes.shuffled().take(3)
+                            estadosChecked.clear()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD39B7C)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Dame más tareas >.<", color = Color.White, fontSize = 13.sp)
                     }
                 }
             }
