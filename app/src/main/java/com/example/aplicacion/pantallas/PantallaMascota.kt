@@ -23,6 +23,12 @@ import com.example.aplicacion.R
 import com.example.aplicacion.data.PreferenciasDiarias
 import com.example.aplicacion.data.UsuarioRepository
 import com.example.aplicacion.model.Usuario
+import android.content.Context
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun PantallaMascota(
@@ -31,9 +37,18 @@ fun PantallaMascota(
 ) {
     val context = LocalContext.current
     val repo = remember { UsuarioRepository(context) }
+    var nivelMascota by remember {
+        mutableStateOf(
+            PreferenciasDiarias.reiniciarNivelSiEsNuevoDia(context, repo, usuario.id))
+    }
 
+    // tareas completas
+    var tareasCompletadas by remember {
+        mutableStateOf(
+            PreferenciasDiarias.obtenerTareasCompletadas(context, usuario.id).toMutableSet()
+        )
+    }
     // tareas sugeridas
-    // lista de sugerencias fijas
     val sugeridas = listOf(
         "Alimenta al gatito" to 10,
         "Hacer la cama" to 5,
@@ -78,21 +93,56 @@ fun PantallaMascota(
         "Evaluar tus logros del día" to 5
     )
 
-    var nivelMascota by remember {
-        mutableStateOf(PreferenciasDiarias.reiniciarNivelSiEsNuevoDia(context, repo, usuario.id))
+    // gps- meta de pasos
+    val metaPasos = 1000
+    var pasosActuales by remember { mutableStateOf(PreferenciasDiarias.obtenerPasos(context)) }
+
+    // sensor de caminata
+    val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    val stepListener = remember {
+        object : SensorEventListener {
+            var pasosIniciales: Int? = null
+            override fun onSensorChanged(event: SensorEvent?) {
+                event?.let {
+                    val contador = event.values[0].toInt()
+                    if (pasosIniciales == null) pasosIniciales = contador
+                    val pasosHoy = contador - (pasosIniciales ?: contador)
+                    PreferenciasDiarias.guardarPasos(context, pasosHoy)
+                    pasosActuales = pasosHoy
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+        }
+    }
+    //aki queda el registro del sensor
+    LaunchedEffect(Unit) {
+        PreferenciasDiarias.reiniciarPasosSiEsNuevoDia(context)
+        val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+        sensor?.let {
+            sensorManager.registerListener(stepListener, it, SensorManager.SENSOR_DELAY_UI)
+        }
     }
 
-    var tareasCompletadas by remember { mutableStateOf(mutableSetOf<String>()) }
-
-    // Tareas sugeridas actuales
-    var tareasSugeridas by remember {
-        mutableStateOf(
-            PreferenciasDiarias.obtenerTareasDelDia(context, sugeridas)
-                .filter { it.first !in tareasCompletadas }
-        )
+    // la caminata se completa automáticamente
+    LaunchedEffect(pasosActuales) {
+        val nombreTarea = "Camina ${metaPasos} pasos!"
+        if (pasosActuales >= metaPasos && !tareasCompletadas.contains(nombreTarea)) {
+            val nuevas = tareasCompletadas.toMutableSet().apply { add(nombreTarea) }
+            tareasCompletadas = nuevas
+            PreferenciasDiarias.guardarTareaCompletada(context, usuario.id, nombreTarea)
+            nivelMascota = (nivelMascota + 20).coerceAtMost(100)
+            repo.actualizarNivelUsuario(usuario.id, nivelMascota)
+        }
     }
 
     var tareasPersonalizadas by remember { mutableStateOf(repo.obtenerTareasUsuario(usuario.id)) }
+    var tareasSugeridas by remember {
+        mutableStateOf(
+            sugeridas.filterNot { it.first in tareasCompletadas }.shuffled().take(3)
+        )
+    }
+
     var menuExpandido by remember { mutableStateOf(false) }
 
     // imágenes según nivel
@@ -176,9 +226,6 @@ fun PantallaMascota(
             )
         }
 
-        // Campo nueva tarea
-        var nuevaTarea by remember { mutableStateOf("") }
-
         // Panel de tareas
         AnimatedVisibility(
             visible = menuExpandido,
@@ -194,65 +241,46 @@ fun PantallaMascota(
                 border = BorderStroke(2.dp, Color.White),
                 modifier = Modifier.width(260.dp)
             ) {
-                val todasLasTareas = tareasSugeridas + tareasPersonalizadas
+                val todasLasTareas = listOf("Camina ${metaPasos} pasos!" to 20) +
+                        tareasSugeridas + tareasPersonalizadas
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(12.dp)
-                ) {
-                    Text(
-                        text = "Por hacer / Sugerencias",
-                        fontSize = 20.sp,
-                        color = Color(0xFF8B5C42),
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(12.dp)) {
+                    Text("Por hacer / Sugerencias", fontSize = 20.sp, color = Color(0xFF8B5C42))
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
 
-                    //Lista de tareas
-                    var estadosChecked by remember { mutableStateOf(mutableStateMapOf<String, Boolean>()) }
-
+                    // 🧾 Lista de tareas
                     todasLasTareas.forEach { tarea ->
                         val desc = tarea.first
-                        val checked = estadosChecked[desc] ?: false
+                        val checked = tareasCompletadas.contains(desc)
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 6.dp)
-                                .clickable {
-                                    if (!checked) {
-                                        nivelMascota = (nivelMascota + tarea.second).coerceAtMost(100)
-                                        repo.actualizarNivelUsuario(usuario.id, nivelMascota)
-                                        estadosChecked[desc] = true
-                                        if (desc in sugeridas.map { it.first }) {
-                                            tareasCompletadas.add(desc)
-                                        }
+                                .clickable(enabled = desc != "Camina ${metaPasos} pasos!") {
+                                    if (!checked && desc != "Camina ${metaPasos} pasos!") {
+                                        val nuevoNivel = (nivelMascota + tarea.second).coerceAtMost(100)
+                                        nivelMascota = nuevoNivel
+                                        repo.actualizarNivelUsuario(usuario.id, nuevoNivel)
+                                        val nuevas = tareasCompletadas.toMutableSet().apply { add(desc) }
+                                        tareasCompletadas = nuevas
+                                        PreferenciasDiarias.guardarTareaCompletada(context, usuario.id, desc)
                                     }
                                 }
                         ) {
                             Checkbox(
                                 checked = checked,
-                                onCheckedChange = { nuevo ->
-                                    if (!checked && nuevo) {
-                                        nivelMascota = (nivelMascota + tarea.second).coerceAtMost(100)
-                                        repo.actualizarNivelUsuario(usuario.id, nivelMascota)
-                                        estadosChecked[desc] = true
-                                        if (desc in sugeridas.map { it.first }) {
-                                            tareasCompletadas.add(desc)
-                                        }
-                                    } else if (!nuevo) {
-                                        estadosChecked[desc] = false
-                                    }
-                                },
+                                onCheckedChange = null,
+                                enabled = desc != "Camina ${metaPasos} pasos!",
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = Color(0xFF74C69D),
                                     uncheckedColor = Color(0xFF8B5C42)
                                 )
                             )
                             Text(
-                                text = desc,
+                                text = if (desc == "Camina ${metaPasos} pasos!") "$desc (${pasosActuales}/$metaPasos)"
+                                else desc,
                                 color = if (checked) Color(0x99755C48) else Color(0xFF755C48),
                                 textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None,
                                 fontSize = 14.sp
@@ -262,7 +290,7 @@ fun PantallaMascota(
 
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
 
-                    // Añadir nueva tarea
+                    // ➕ Añadir nueva tarea personalizada
                     var nuevaTarea by remember { mutableStateOf("") }
 
                     OutlinedTextField(
@@ -276,7 +304,7 @@ fun PantallaMascota(
 
                     Button(
                         onClick = {
-                            val puntos = (5..15).random()
+                            val puntos = (5..10).random()
                             if (nuevaTarea.isNotBlank()) {
                                 repo.insertarTarea(usuario.id, nuevaTarea, puntos)
                                 tareasPersonalizadas = repo.obtenerTareasUsuario(usuario.id)
@@ -293,18 +321,21 @@ fun PantallaMascota(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // refrescar sugeridas
+                    // 🔄 Refrescar las sugeridas (nuevas 3 que no estén completadas)
                     Button(
                         onClick = {
-                            val restantes = sugeridas.filter { it.first !in tareasCompletadas }
-                            tareasSugeridas = restantes.shuffled().take(3)
-                            estadosChecked.clear()
+                            tareasSugeridas = sugeridas
+                                .filterNot { it.first in tareasCompletadas }
+                                .shuffled()
+                                .take(3)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD39B7C)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Dame más tareas >.<", color = Color.White, fontSize = 13.sp)
                     }
+
+                    Spacer(modifier = Modifier.height(6.dp))
                 }
             }
         }

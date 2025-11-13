@@ -52,6 +52,47 @@ object PreferenciasDiarias {
             editor.remove("tarea_${i}_puntos")
         }
     }
+    fun guardarTareaCompletada(context: Context, userId: Int, tarea: String) {
+        val p = prefs(context)
+        val key = "tareasCompletadas_$userId"
+        val actuales = p.getStringSet(key, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+        actuales.add(tarea)
+        p.edit { putStringSet(key, actuales) }
+    }
+
+    fun obtenerTareasCompletadas(context: Context, userId: Int): Set<String> {
+        val p = prefs(context)
+        val key = "tareasCompletadas_$userId"
+        return p.getStringSet(key, emptySet()) ?: emptySet()
+    }
+
+    fun guardarPasos(context: Context, pasos: Int) {
+        val p = prefs(context)
+        val hoy = fechaActual()
+        p.edit {
+            putInt("pasosHoy", pasos)
+            putString("fecha_pasos", hoy)
+        }
+    }
+
+    fun obtenerPasos(context: Context): Int {
+        val p = prefs(context)
+        val hoy = fechaActual()
+        val ultimaFecha = p.getString("fecha_pasos", "")
+        return if (ultimaFecha == hoy) p.getInt("pasosHoy", 0) else 0
+    }
+
+    fun reiniciarPasosSiEsNuevoDia(context: Context) {
+        val p = prefs(context)
+        val hoy = fechaActual()
+        val ultimaFecha = p.getString("fecha_pasos", "")
+        if (ultimaFecha != hoy) {
+            p.edit {
+                putInt("pasosHoy", 0)
+                putString("fecha_pasos", hoy)
+            }
+        }
+    }
 
     /** Reinicia el nivel de la mascota si es un día nuevo */
     fun reiniciarNivelSiEsNuevoDia(
