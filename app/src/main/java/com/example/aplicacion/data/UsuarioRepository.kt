@@ -132,5 +132,41 @@ class UsuarioRepository(context: Context) {
         db.close()
         return usuario
     }
+    // --- Gestión general de usuarios ---
+
+    fun obtenerTodosLosUsuarios(): List<Usuario> {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM ${UsuarioDbHelper.TABLE_USUARIOS}", null)
+        val lista = mutableListOf<Usuario>()
+        while (cursor.moveToNext()) {
+            val usuario = Usuario(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_ID)),
+                nombre = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NOMBRE)),
+                correo = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CORREO)),
+                contrasena = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CONTRASENA)),
+                fechaNacimiento = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_FECHA)),
+                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL))
+            )
+            lista.add(usuario)
+        }
+        cursor.close()
+        db.close()
+        return lista
+    }
+
+    fun eliminarUsuario(idUsuario: Int) {
+        val db = dbHelper.writableDatabase
+        db.delete(
+            UsuarioDbHelper.TABLE_TAREAS,
+            "${UsuarioDbHelper.COLUMN_TAREA_USUARIO_ID} = ?",
+            arrayOf(idUsuario.toString())
+        )
+        db.delete(
+            UsuarioDbHelper.TABLE_USUARIOS,
+            "${UsuarioDbHelper.COLUMN_ID} = ?",
+            arrayOf(idUsuario.toString())
+        )
+        db.close()
+    }
 }//fin clase
 

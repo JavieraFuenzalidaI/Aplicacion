@@ -23,31 +23,35 @@ import com.example.aplicacion.R
 import com.example.aplicacion.data.PreferenciasDiarias
 import com.example.aplicacion.data.UsuarioRepository
 import com.example.aplicacion.model.Usuario
-import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import androidx.compose.runtime.LaunchedEffect
+import com.example.aplicacion.MainActivity
 
 @Composable
 fun PantallaMascota(
+
     navController: NavHostController,
-    usuario: Usuario
+    usuario: Usuario,
+    esAdmin: Boolean = false
 ) {
     val context = LocalContext.current
     val repo = remember { UsuarioRepository(context) }
+
     var nivelMascota by remember {
         mutableStateOf(
-            PreferenciasDiarias.reiniciarNivelSiEsNuevoDia(context, repo, usuario.id))
+            PreferenciasDiarias.reiniciarNivelSiEsNuevoDia(context, repo, usuario.id)
+        )
     }
 
-    // tareas completas
     var tareasCompletadas by remember {
         mutableStateOf(
             PreferenciasDiarias.obtenerTareasCompletadas(context, usuario.id).toMutableSet()
         )
     }
+
     // tareas sugeridas
     val sugeridas = listOf(
         "Alimenta al gatito" to 10,
@@ -93,12 +97,10 @@ fun PantallaMascota(
         "Evaluar tus logros del día" to 5
     )
 
-    // gps- meta de pasos
     val metaPasos = 1000
-    var pasosActuales by remember { mutableStateOf(PreferenciasDiarias.obtenerPasos(context)) }
+    var pasosActuales by remember { mutableStateOf(PreferenciasDiarias.obtenerPasos(context, usuario.id)) }
 
-    // sensor de caminata
-    val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    val sensorManager = context.getSystemService(android.content.Context.SENSOR_SERVICE) as SensorManager
     val stepListener = remember {
         object : SensorEventListener {
             var pasosIniciales: Int? = null
@@ -107,7 +109,7 @@ fun PantallaMascota(
                     val contador = event.values[0].toInt()
                     if (pasosIniciales == null) pasosIniciales = contador
                     val pasosHoy = contador - (pasosIniciales ?: contador)
-                    PreferenciasDiarias.guardarPasos(context, pasosHoy)
+                    PreferenciasDiarias.guardarPasos(context, usuario.id, pasosHoy)
                     pasosActuales = pasosHoy
                 }
             }
@@ -115,24 +117,30 @@ fun PantallaMascota(
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
         }
     }
-    //aki queda el registro del sensor
+    // pa el tracker de pasos
     LaunchedEffect(Unit) {
-        PreferenciasDiarias.reiniciarPasosSiEsNuevoDia(context)
+        PreferenciasDiarias.reiniciarPasosSiEsNuevoDia(context, usuario.id)
         val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         sensor?.let {
             sensorManager.registerListener(stepListener, it, SensorManager.SENSOR_DELAY_UI)
         }
     }
 
-    // la caminata se completa automáticamente
     LaunchedEffect(pasosActuales) {
         val nombreTarea = "Camina ${metaPasos} pasos!"
         if (pasosActuales >= metaPasos && !tareasCompletadas.contains(nombreTarea)) {
             val nuevas = tareasCompletadas.toMutableSet().apply { add(nombreTarea) }
             tareasCompletadas = nuevas
-            PreferenciasDiarias.guardarTareaCompletada(context, usuario.id, nombreTarea)
+
             nivelMascota = (nivelMascota + 20).coerceAtMost(100)
             repo.actualizarNivelUsuario(usuario.id, nivelMascota)
+
+            PreferenciasDiarias.guardarTareaCompletada(context, usuario.id, nombreTarea)
+
+            // la notificacion se manda si tiene <40 (gatito triste)
+            if (nivelMascota <40) {
+                (context as? MainActivity)?.mostrarNotificacionNivelBajo(context)
+            }
         }
     }
 
@@ -145,7 +153,7 @@ fun PantallaMascota(
 
     var menuExpandido by remember { mutableStateOf(false) }
 
-    // imágenes según nivel
+    //imagenes personalizadas para cada nivel de la mascota. Sincronizadas entre gato y corazao
     val corazonRes = when (nivelMascota) {
         in 0..20 -> R.drawable.corazon_0_20
         in 21..40 -> R.drawable.corazon_20_40
@@ -162,17 +170,15 @@ fun PantallaMascota(
         else -> R.drawable.av_gato_80_100
     }
 
-    // UI general
     Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo
+        //fondo
         Image(
             painter = painterResource(id = R.drawable.fondo_pantalla_mascota),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
-        // Corazón
+        //el corazao
         Image(
             painter = painterResource(id = corazonRes),
             contentDescription = "Estado de ánimo",
@@ -181,8 +187,7 @@ fun PantallaMascota(
                 .padding(top = 150.dp)
                 .size(150.dp)
         )
-
-        // Mascota
+        //mascota
         Image(
             painter = painterResource(id = gatoRes),
             contentDescription = "Mascota",
@@ -190,13 +195,15 @@ fun PantallaMascota(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 65.dp, start = 20.dp)
         )
-
-        // Botón regreso
+        //btn de volver a sesion iniciada
         IconButton(
             onClick = {
-                navController.navigate("sesion_iniciada/${usuario.correo}") {
-                    popUpTo(0)
-                }
+                if (esAdmin) {
+                    navController.navigate("sesion_iniciada_admin") {
+                        popUpTo(0)
+                    }
+                }else
+                navController.navigate("sesion_iniciada/${usuario.correo}") { popUpTo(0) }
             },
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -205,15 +212,12 @@ fun PantallaMascota(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.btn_regreso_icon),
-                contentDescription = "Volver a sesion iniciada"
+                contentDescription = "Volver"
             )
         }
-
-        // Icono de tareas
+        //btn de las tareas
         IconButton(
-            onClick = {
-                menuExpandido = !menuExpandido
-            },
+            onClick = { menuExpandido = !menuExpandido },
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(30.dp)
@@ -222,11 +226,11 @@ fun PantallaMascota(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.tareas_icon),
-                contentDescription = "Icono de Tareas"
+                contentDescription = "Tareas"
             )
         }
 
-        // Panel de tareas
+        //el menu de tareas
         AnimatedVisibility(
             visible = menuExpandido,
             modifier = Modifier
@@ -241,6 +245,7 @@ fun PantallaMascota(
                 border = BorderStroke(2.dp, Color.White),
                 modifier = Modifier.width(260.dp)
             ) {
+                //Orden + lo que se va a mostrar, caminata y tareas siempre se muestran
                 val todasLasTareas = listOf("Camina ${metaPasos} pasos!" to 20) +
                         tareasSugeridas + tareasPersonalizadas
 
@@ -248,7 +253,6 @@ fun PantallaMascota(
                     Text("Por hacer / Sugerencias", fontSize = 20.sp, color = Color(0xFF8B5C42))
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
 
-                    // 🧾 Lista de tareas
                     todasLasTareas.forEach { tarea ->
                         val desc = tarea.first
                         val checked = tareasCompletadas.contains(desc)
@@ -290,7 +294,7 @@ fun PantallaMascota(
 
                     Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
 
-                    // ➕ Añadir nueva tarea personalizada
+                    //aqui se crean las tareas personalizadas
                     var nuevaTarea by remember { mutableStateOf("") }
 
                     OutlinedTextField(
@@ -302,6 +306,7 @@ fun PantallaMascota(
                             .padding(top = 8.dp)
                     )
 
+                    // 3 Tareas randoms q se pueden refrescar
                     Button(
                         onClick = {
                             val puntos = (5..10).random()
@@ -321,7 +326,6 @@ fun PantallaMascota(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // 🔄 Refrescar las sugeridas (nuevas 3 que no estén completadas)
                     Button(
                         onClick = {
                             tareasSugeridas = sugeridas
@@ -336,6 +340,38 @@ fun PantallaMascota(
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
+
+                    //solo pa el admin B)
+                    if (esAdmin) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Divider(color = Color.White, thickness = 1.8.dp)
+                        Text(
+                            text = "Controles de administrador",
+                            color = Color.White,
+                            fontSize = 14.sp
+                        )
+
+                        //boton peligroso :0 resetea el estado de la mascota del admin (pa testear cosas)
+                        Button(
+                            onClick = {
+                                PreferenciasDiarias.resetTotal(context, repo, usuario.id)
+
+                                nivelMascota =
+                                    repo.obtenerUsuarioPorId(usuario.id)?.nivelMascota ?: 0
+                                tareasCompletadas =
+                                    PreferenciasDiarias.obtenerTareasCompletadas(context, usuario.id)
+                                        .toMutableSet()
+                                pasosActuales =
+                                    PreferenciasDiarias.obtenerPasos(context, usuario.id)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD39B7C)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                        ) {
+                            Text("Reset total", color = Color.White)
+                        }
+                    }
                 }
             }
         }

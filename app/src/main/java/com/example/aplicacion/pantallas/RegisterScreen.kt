@@ -45,11 +45,11 @@ fun RegisterScreen(navController: NavHostController) {
     val focusManager = LocalFocusManager.current
     val passwordFocusRequester = remember { FocusRequester() }
 
-// --- 🔹 ViewModel y Repository ---
+    //ViewModel y Repository
     val repository = remember { UsuarioRepository(context) }
     val viewModel: RegistroViewModel = viewModel(factory = RegistroViewModelFactory(repository))
 
-// --- 🔹 Estados del formulario ---
+    // Estados del formulario
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -88,7 +88,7 @@ fun RegisterScreen(navController: NavHostController) {
         return valid
     }
 
-// --- 🔹 UI ---
+    // UI
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(id = R.drawable.fondo_iniciar_sesion),
@@ -111,7 +111,7 @@ fun RegisterScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Nombre de usuario ---
+            // Nombre de usuario
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
@@ -126,7 +126,7 @@ fun RegisterScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Correo ---
+            // Correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -144,7 +144,7 @@ fun RegisterScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Contraseña ---
+            //Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -165,7 +165,7 @@ fun RegisterScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Fecha de nacimiento ---
+            // Fecha de nacimiento
             val calendar = Calendar.getInstance()
             val year = calendar.get(Calendar.YEAR)
             val month = calendar.get(Calendar.MONTH)
@@ -198,7 +198,7 @@ fun RegisterScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Botón de registro ---
+            //Botón de registro
             Button(
                 onClick = {
                     if (validateFields()) {
@@ -226,6 +226,7 @@ fun RegisterScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Link a Iniciar sesión
             Text(
                 text = "¿Ya tienes cuenta? Inicia sesión",
                 color = Color(0xFF6D4C41),

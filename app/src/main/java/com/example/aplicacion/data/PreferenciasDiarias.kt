@@ -1,28 +1,30 @@
 package com.example.aplicacion.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import java.text.SimpleDateFormat
 import java.util.*
 
 object PreferenciasDiarias {
 
-    private const val PREFS_NAME = "MascotaPrefs"
+    /** SharedPreferences individuales por usuario */
+    private fun prefs(context: Context, userId: Int): SharedPreferences =
+        context.getSharedPreferences("MascotaPrefs_$userId", Context.MODE_PRIVATE)
 
-    private fun prefs(context: Context) =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
+    /** Fecha actual en formato AAAA-MM-DD */
     fun fechaActual(): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return sdf.format(Date())
     }
 
-    /** Obtiene las 3 tareas sugeridas actuales, o genera nuevas si es un nuevo día */
+    /** Obtiene las 3 tareas sugeridas del día o genera nuevas si es un nuevo día */
     fun obtenerTareasDelDia(
         context: Context,
+        userId: Int,
         todas: List<Pair<String, Int>>
     ): List<Pair<String, Int>> {
-        val p = prefs(context)
+        val p = prefs(context, userId)
         val hoy = fechaActual()
         val ultimaFecha = p.getString("fecha_tareas", null)
 
@@ -46,28 +48,30 @@ object PreferenciasDiarias {
         }
     }
 
-    private fun clearTareas(editor: android.content.SharedPreferences.Editor) {
+    private fun clearTareas(editor: SharedPreferences.Editor) {
         (0 until 3).forEach { i ->
             editor.remove("tarea_${i}_texto")
             editor.remove("tarea_${i}_puntos")
         }
     }
+
+    /** Guarda una tarea completada para ese usuario */
     fun guardarTareaCompletada(context: Context, userId: Int, tarea: String) {
-        val p = prefs(context)
-        val key = "tareasCompletadas_$userId"
+        val p = prefs(context, userId)
+        val key = "tareasCompletadas"
         val actuales = p.getStringSet(key, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         actuales.add(tarea)
         p.edit { putStringSet(key, actuales) }
     }
 
     fun obtenerTareasCompletadas(context: Context, userId: Int): Set<String> {
-        val p = prefs(context)
-        val key = "tareasCompletadas_$userId"
-        return p.getStringSet(key, emptySet()) ?: emptySet()
+        val p = prefs(context, userId)
+        return p.getStringSet("tareasCompletadas", emptySet()) ?: emptySet()
     }
 
-    fun guardarPasos(context: Context, pasos: Int) {
-        val p = prefs(context)
+    /** Guarda los pasos del día */
+    fun guardarPasos(context: Context, userId: Int, pasos: Int) {
+        val p = prefs(context, userId)
         val hoy = fechaActual()
         p.edit {
             putInt("pasosHoy", pasos)
@@ -75,15 +79,15 @@ object PreferenciasDiarias {
         }
     }
 
-    fun obtenerPasos(context: Context): Int {
-        val p = prefs(context)
+    fun obtenerPasos(context: Context, userId: Int): Int {
+        val p = prefs(context, userId)
         val hoy = fechaActual()
         val ultimaFecha = p.getString("fecha_pasos", "")
         return if (ultimaFecha == hoy) p.getInt("pasosHoy", 0) else 0
     }
 
-    fun reiniciarPasosSiEsNuevoDia(context: Context) {
-        val p = prefs(context)
+    fun reiniciarPasosSiEsNuevoDia(context: Context, userId: Int) {
+        val p = prefs(context, userId)
         val hoy = fechaActual()
         val ultimaFecha = p.getString("fecha_pasos", "")
         if (ultimaFecha != hoy) {
@@ -98,25 +102,25 @@ object PreferenciasDiarias {
     fun reiniciarNivelSiEsNuevoDia(
         context: Context,
         repo: UsuarioRepository,
-        usuarioId: Int
+        userId: Int
     ): Int {
-        val p = prefs(context)
+        val p = prefs(context, userId)
         val hoy = fechaActual()
         val ultimaFecha = p.getString("fecha_nivel", null)
 
         return if (ultimaFecha != hoy) {
             val nuevoNivel = (0..20).random()
-            repo.actualizarNivelUsuario(usuarioId, nuevoNivel)
+            repo.actualizarNivelUsuario(userId, nuevoNivel)
             p.edit { putString("fecha_nivel", hoy) }
             nuevoNivel
         } else {
-            repo.obtenerUsuarioPorId(usuarioId)?.nivelMascota ?: 0
+            repo.obtenerUsuarioPorId(userId)?.nivelMascota ?: 0
         }
     }
 
-    /** 🔄 Reset manual del día */
-    fun resetDiario(context: Context) {
-        val p = prefs(context)
+    /** Reinicia solo los datos del día del usuario */
+    fun resetDiario(context: Context, userId: Int) {
+        val p = prefs(context, userId)
         p.edit {
             remove("fecha_tareas")
             remove("fecha_nivel")
@@ -124,10 +128,19 @@ object PreferenciasDiarias {
         }
     }
 
-    /** 💣 Reset completo (también borra tareas de usuario si se desea) */
-    fun resetTotal(context: Context, repo: UsuarioRepository, usuarioId: Int) {
-        resetDiario(context)
-        repo.borrarTareasUsuario(usuarioId)
-        repo.actualizarNivelUsuario(usuarioId, 0)
+    /**El reset total, solo puede ser usado por admin */
+    fun resetTotal(context: Context, repo: UsuarioRepository, userId: Int) {
+        val p = prefs(context, userId)
+        val hoy = fechaActual()
+
+        p.edit {
+            clear()
+            putString("fecha_pasos", hoy)
+            putInt("pasosHoy", 0)
+        }
+
+        // Limpieza en base de datos
+        repo.borrarTareasUsuario(userId)
+        repo.actualizarNivelUsuario(userId, 0)
     }
 }

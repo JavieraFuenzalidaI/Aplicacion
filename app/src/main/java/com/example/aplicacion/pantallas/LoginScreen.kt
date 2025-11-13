@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -21,12 +20,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.aplicacion.R
+import com.example.aplicacion.data.SesionManager
 import com.example.aplicacion.data.UsuarioRepository
 import com.example.aplicacion.viewmodel.LoginViewModel
 import com.example.aplicacion.viewmodel.LoginViewModelFactory
@@ -37,13 +36,11 @@ fun LoginScreen(navController: NavHostController) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val passwordFocusRequest = remember { FocusRequester() }
-    val sesionManager = remember { com.example.aplicacion.data.SesionManager(context) }
+    val sesionManager = remember { SesionManager(context) }
 
-    // --- ViewModel y Repository ---
     val repository = remember { UsuarioRepository(context) }
     val viewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory(repository))
 
-    // --- Estados de UI ---
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -51,6 +48,7 @@ fun LoginScreen(navController: NavHostController) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+        //fondo
         Image(
             painter = painterResource(id = R.drawable.fondo_iniciar_sesion),
             contentDescription = "Fondo Login",
@@ -96,13 +94,14 @@ fun LoginScreen(navController: NavHostController) {
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        val usuario = viewModel.iniciarSesion(email, password)
-                        if (usuario != null) {
-                            Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                            navController.navigate("sesion_iniciada/${usuario.correo}")
-                        } else {
-                            errorMessage = "Correo o contraseña incorrectos"
-                        }
+                        handleLoginLogic(
+                            email,
+                            password,
+                            context,
+                            navController,
+                            sesionManager,
+                            viewModel
+                        )
                         focusManager.clearFocus()
                     }
                 ),
@@ -122,8 +121,7 @@ fun LoginScreen(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Botón de inicio de sesión ---
-
+            // Botón de inicio de sesión
             Image(
                 painter = painterResource(id = R.drawable.iniciar_sesion_btn),
                 contentDescription = "Botón Iniciar sesión",
@@ -134,25 +132,21 @@ fun LoginScreen(navController: NavHostController) {
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
                     ) {
-                        if (email.isNotBlank() && password.isNotBlank()) {
-                            val usuario = viewModel.iniciarSesion(email, password)
-                            if (usuario != null) {
-                                //aki se guarda la sesión
-                                sesionManager.guardarSesion(usuario.correo)
-                                Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                                navController.navigate("sesion_iniciada/${usuario.correo}")
-                            } else {
-                                errorMessage = "Correo o contraseña incorrectos"
-                            }
-                        } else {
-                            errorMessage = "Completa todos los campos"
-                        }
+                        handleLoginLogic(
+                            email,
+                            password,
+                            context,
+                            navController,
+                            sesionManager,
+                            viewModel
+                        )
                     },
                 contentScale = ContentScale.Fit
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // link a registro
             Text(
                 text = "¿No tienes cuenta? Regístrate",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -167,11 +161,34 @@ fun LoginScreen(navController: NavHostController) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    val navController = rememberNavController()
-    com.example.aplicacion.ui.theme.TaskiPetTheme {
-        LoginScreen(navController)
+private fun handleLoginLogic(
+    email: String,
+    password: String,
+    context: android.content.Context,
+    navController: NavHostController,
+    sesionManager: SesionManager,
+    viewModel: LoginViewModel
+) {
+    // Comprobación básica
+    if (email.isBlank() || password.isBlank()) {
+        Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    // si es admin
+    if (email == "admin" && password == "adminpw") {
+        Toast.makeText(context, "Bienvenido/a Administrador/a", Toast.LENGTH_SHORT).show()
+        navController.navigate("sesion_iniciada_admin")
+        return
+    }
+
+    // si es usuario
+    val usuario = viewModel.iniciarSesion(email, password)
+    if (usuario != null) {
+        sesionManager.guardarSesion(usuario.correo)
+        Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+        navController.navigate("sesion_iniciada/${usuario.correo}")
+    } else {
+        Toast.makeText(context, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show()
     }
 }

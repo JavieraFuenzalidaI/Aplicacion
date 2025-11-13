@@ -26,7 +26,7 @@ fun HomeScreen(navController: NavHostController) {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 🔹 Fondo general
+            // Fondo
             Image(
                 painter = painterResource(id = R.drawable.fondo_inicio_aplicacion),
                 contentDescription = "Fondo Pantalla Inicio",
