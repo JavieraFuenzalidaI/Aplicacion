@@ -144,8 +144,8 @@ class MainActivity : ComponentActivity() {
         }
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setContentTitle("🐾 Tu mascota necesita ayuda")
-            .setContentText("Su nivel de energía está bajo, ¡dale atención o comida!")
+            .setContentTitle("Tu mascota necesita ayuda")
+            .setContentText("Su nivel de energía está bajo, ¡Hora de hacer tareas!")
             .setSmallIcon(R.mipmap.logo_app)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
