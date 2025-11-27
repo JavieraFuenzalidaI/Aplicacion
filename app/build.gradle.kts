@@ -4,13 +4,16 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+
 android {
     namespace = "com.example.aplicacion"
     compileSdk = 36
 
+
     composeOptions {
         kotlinCompilerExtensionVersion = "1.7.2"
     }
+
 
     defaultConfig {
         applicationId = "com.example.aplicacion"
@@ -19,8 +22,10 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
 
     buildTypes {
         release {
@@ -43,7 +48,9 @@ android {
     }
 }
 
+
 dependencies {
+
 
     implementation("androidx.navigation:navigation-compose:2.8.0")
     implementation(libs.androidx.core.ktx)
@@ -72,4 +79,5 @@ dependencies {
     implementation("androidx.compose.runtime:runtime:1.7.2")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.compose.material:material-icons-extended:1.7.2")
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha02")
 }

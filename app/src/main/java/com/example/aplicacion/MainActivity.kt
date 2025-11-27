@@ -1,10 +1,12 @@
 package com.example.aplicacion
 
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.health.connect.datatypes.HeartRateRecord
 import androidx.activity.compose.setContent
 import android.os.Build
 import android.os.Bundle
@@ -31,38 +33,48 @@ import com.example.aplicacion.pantallas.SesionIniciadaScreen
 import com.example.aplicacion.pantallas.VerUsuarios
 import com.example.aplicacion.pantallas.AdminSesionIniciadaScreen
 
+
 class MainActivity : ComponentActivity() {
+    private lateinit var healthConnectClient: HealthConnectClient
+
 
     // pedir permisos
-    private val permissionRequest =
-        registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
+    // HEALTH CONNECT
+    val PERMISSIONS =
+        setOf(
+            HealthPermission.getReadPermission(HeartRateRecord::class),
+            HealthPermission.getWritePermission(HeartRateRecord::class),
+            HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.getWritePermission(StepsRecord::class)
+        )
 
-            val fine = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-            val coarse = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
-            val notif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                permissions[Manifest.permission.POST_NOTIFICATIONS] ?: false
-            else
-                true
 
-            if (fine || coarse) {
-                println("✅ Permiso de ubicación concedido")
+    private val healthPermissionRequest =
+        registerForActivityResult(createRequestPermissionResultContract()) { granted ->
+            if (granted.containsAll(healthPermissions)) {
+                println("✅ Permisos de Health Connect concedidos")
             } else {
-                println("⚠️ Permiso de ubicación denegado")
+                println("⚠️ Permisos de Health Connect denegados")
             }
+        }
 
-            if (notif) {
+
+    // PERMISOS DE NOTIFICACIONES
+    private val notificationPermissionRequest =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
                 println("✅ Permiso de notificaciones concedido")
             } else {
                 println("⚠️ Permiso de notificaciones denegado")
             }
         }
 
+
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
 
         // fuera hud >:C
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -74,7 +86,15 @@ class MainActivity : ComponentActivity() {
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        pedirPermisos()
+
+
+
+        healthConnectClient = HealthConnectClient.getOrCreate(applicationContext)
+
+
+        pedirPermisosHealthConnect()
+        pedirPermisoNotificaciones()
+
 
         setContent {
             TaskiPetTheme {
@@ -82,6 +102,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val sesionManager = remember { com.example.aplicacion.data.SesionManager(context) }
                 val correoGuardado = sesionManager.obtenerSesion()
+
 
                 // Navegación principal
                 NavHost(
@@ -97,6 +118,7 @@ class MainActivity : ComponentActivity() {
                     composable("home") { HomeScreen(navController) }
                     composable("login") { LoginScreen(navController) }
                     composable("register") { RegisterScreen(navController) }
+
 
                     //sesion iniciada, son personalizadas para cada user
                     composable(
@@ -134,53 +156,51 @@ class MainActivity : ComponentActivity() {
                         PantallaMascota(navController, adminUsuario, esAdmin = true)
                     }
 
+
                     composable("sesion_iniciada_admin") { AdminSesionIniciadaScreen(navController) }
                     composable("ver_usuarios") { VerUsuarios(navController) }
                 }
+
 
             }
         }
     }
 
-    // pedir permisos logica
-    private fun pedirPermisos() {
-        val permisos = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permisos.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
 
-        permissionRequest.launch(permisos.toTypedArray())
+    // PEDIR PERMISOS DE NOTIFICACIÓN
+    private fun pedirPermisoNotificaciones() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
-    // notificaciones
+
+    // ENVIAR NOTIFICACIÓN
     fun mostrarNotificacionNivelBajo(context: Context) {
         val channelId = "taskipet_alertas"
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Crear canal (solo una vez para Android 8+) (?)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
                 "Alertas de mascota",
                 NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Notificaciones cuando la energía de la mascota está baja"
-            }
+            )
             manager.createNotificationChannel(channel)
         }
 
-        // Datos de la notificaión
+
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.logo_app)
             .setContentTitle("Tu mascota te extraña demasiado")
-            .setContentText("Su nivel de amor es bajo :c , ¡hora de completar tareas!")
+            .setContentText("Su nivel de amor está bajo 🥺 ¡completa tareas!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
 
+
         manager.notify(1, notification)
     }
 }
+
