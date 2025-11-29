@@ -1,56 +1,53 @@
 package com.example.aplicacion
 
-
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.health.connect.datatypes.HeartRateRecord
-import androidx.activity.compose.setContent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.HeartRateRecord
+import androidx.health.connect.client.records.StepsRecord
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.aplicacion.data.UsuarioRepository
-import com.example.aplicacion.ui.theme.TaskiPetTheme
-import com.example.aplicacion.pantallas.HomeScreen
-import com.example.aplicacion.pantallas.LoginScreen
-import com.example.aplicacion.pantallas.PantallaMascota
-import com.example.aplicacion.pantallas.RegisterScreen
-import com.example.aplicacion.pantallas.SesionIniciadaScreen
-import com.example.aplicacion.pantallas.VerUsuarios
-import com.example.aplicacion.pantallas.AdminSesionIniciadaScreen
-
+import com.example.aplicacion.data.*
+import com.example.aplicacion.ui.theme.*
+import com.example.aplicacion.pantallas.*
+import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
+
     private lateinit var healthConnectClient: HealthConnectClient
 
+    // Permisos de Health Connect
+    private val healthPermissions = setOf(
+        HealthPermission.getReadPermission(HeartRateRecord::class),
+        HealthPermission.getWritePermission(HeartRateRecord::class),
+        HealthPermission.getReadPermission(StepsRecord::class),
+        HealthPermission.getWritePermission(StepsRecord::class)
+    )
 
-    // pedir permisos
-    // HEALTH CONNECT
-    val PERMISSIONS =
-        setOf(
-            HealthPermission.getReadPermission(HeartRateRecord::class),
-            HealthPermission.getWritePermission(HeartRateRecord::class),
-            HealthPermission.getReadPermission(StepsRecord::class),
-            HealthPermission.getWritePermission(StepsRecord::class)
-        )
-
-
+    // Permiso de Health Connect
     private val healthPermissionRequest =
-        registerForActivityResult(createRequestPermissionResultContract()) { granted ->
+        registerForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
             if (granted.containsAll(healthPermissions)) {
                 println("✅ Permisos de Health Connect concedidos")
             } else {
@@ -58,8 +55,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
-    // PERMISOS DE NOTIFICACIONES
+    // Permiso de Notificaciones
     private val notificationPermissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -69,14 +65,21 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // HealthConnect: crear cliente de forma segura
+        try {
+            healthConnectClient = HealthConnectClient.getOrCreate(this)
+            println("✅HealthConnect disponible correctamente.")
+            pedirPermisosHealthConnect()   // ← aquí sí solicitará los permisos
+        } catch (e: Exception) {
+            println("⚠️HealthConnect no está disponible ni como módulo del sistema: ${e.message}")
+        }
 
-        // fuera hud >:C
+        // Ocultar barras del sistema
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val controller = WindowInsetsControllerCompat(window, window.decorView)
         controller.hide(
@@ -86,16 +89,12 @@ class MainActivity : ComponentActivity() {
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-
-
-
+        // Inicializar Health Connect
         healthConnectClient = HealthConnectClient.getOrCreate(applicationContext)
 
-
-        pedirPermisosHealthConnect()
         pedirPermisoNotificaciones()
 
-
+        // Cargar contenido
         setContent {
             TaskiPetTheme {
                 val context = LocalContext.current
@@ -103,10 +102,8 @@ class MainActivity : ComponentActivity() {
                 val sesionManager = remember { com.example.aplicacion.data.SesionManager(context) }
                 val correoGuardado = sesionManager.obtenerSesion()
 
-
                 // Navegación principal
                 NavHost(
-                    // Si ya inició sesión se va a la pantalla del usuario
                     navController = navController,
                     startDestination = when {
                         correoGuardado == "admin" -> "sesion_iniciada_admin"
@@ -114,13 +111,10 @@ class MainActivity : ComponentActivity() {
                         else -> "home"
                     }
                 ) {
-                    //rutas simples del home, login y register
                     composable("home") { HomeScreen(navController) }
                     composable("login") { LoginScreen(navController) }
                     composable("register") { RegisterScreen(navController) }
 
-
-                    //sesion iniciada, son personalizadas para cada user
                     composable(
                         route = "sesion_iniciada/{correo}",
                         arguments = listOf(navArgument("correo") { type = NavType.StringType })
@@ -128,7 +122,7 @@ class MainActivity : ComponentActivity() {
                         val correo = backStackEntry.arguments?.getString("correo")!!
                         SesionIniciadaScreen(navController, correo)
                     }
-                    //mascota propia de cada usuario
+
                     composable(
                         route = "mascota/{id}",
                         arguments = listOf(navArgument("id") { type = NavType.IntType })
@@ -139,11 +133,10 @@ class MainActivity : ComponentActivity() {
                         if (usuario != null) {
                             PantallaMascota(navController, usuario)
                         } else {
-                            // si no encuentra al usuario se devuelve al login (fallback)
                             LoginScreen(navController)
                         }
                     }
-                    //mascota del admin (pide datos especificos de login)
+
                     composable("mascota_admin") {
                         val adminUsuario = com.example.aplicacion.model.Usuario(
                             id = -1,
@@ -156,30 +149,45 @@ class MainActivity : ComponentActivity() {
                         PantallaMascota(navController, adminUsuario, esAdmin = true)
                     }
 
-
                     composable("sesion_iniciada_admin") { AdminSesionIniciadaScreen(navController) }
                     composable("ver_usuarios") { VerUsuarios(navController) }
                 }
-
-
             }
         }
     }
 
+    /** ====================== PERMISOS ======================= */
 
-    // PEDIR PERMISOS DE NOTIFICACIÓN
-    private fun pedirPermisoNotificaciones() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+    private fun pedirPermisosHealthConnect() {
+        // Verifica si ya se concedieron los permisos de Health Connect
+        val granted: Set<String> = runBlocking {
+            healthConnectClient.permissionController.getGrantedPermissions()
+        }
+
+        if (!granted.containsAll(healthPermissions)) {
+            // Si faltan permisos, los solicita
+            healthPermissionRequest.launch(healthPermissions)
+        } else {
+            println("✅ Permisos de Health Connect ya concedidos")
         }
     }
 
+    private fun pedirPermisoNotificaciones() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this, Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
-    // ENVIAR NOTIFICACIÓN
+    /** ====================== NOTIFICACIONES ======================= */
+
     fun mostrarNotificacionNivelBajo(context: Context) {
         val channelId = "taskipet_alertas"
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -190,7 +198,6 @@ class MainActivity : ComponentActivity() {
             manager.createNotificationChannel(channel)
         }
 
-
         val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.logo_app)
             .setContentTitle("Tu mascota te extraña demasiado")
@@ -199,8 +206,6 @@ class MainActivity : ComponentActivity() {
             .setAutoCancel(true)
             .build()
 
-
         manager.notify(1, notification)
     }
 }
-
