@@ -1,5 +1,6 @@
 package com.example.aplicacion.pantallas
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,75 +16,68 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
-import com.example.aplicacion.data.UsuarioRepository
-import com.example.aplicacion.model.Usuario
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import com.example.aplicacion.data.remote.Usuario
+import com.example.aplicacion.viewmodel.VerUsuariosUiState
+import com.example.aplicacion.viewmodel.VerUsuariosViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VerUsuarios(navController: NavHostController) {
+fun VerUsuarios(
+    navController: NavHostController,
+    viewModel: VerUsuariosViewModel = viewModel()
+) {
+    // Cargamos los usuarios en cuanto la pantalla es visible.
+    LaunchedEffect(Unit) {
+        viewModel.cargarUsuarios()
+    }
+
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val repo = remember { UsuarioRepository(context) }
 
-    var usuarios by remember { mutableStateOf(obtenerUsuarios(repo)) }
-
-    //fondo y topbar
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Usuarios registrados",
-                            color = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFAA847B)
-                ),
+                title = { Text("Usuarios registrados", color = Color.White, modifier = Modifier.fillMaxWidth()) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFAA847B)),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.btn_regreso_icon),
-                            contentDescription = "Volver",
-                            tint = Color.White
-                        )
+                        Icon(painter = painterResource(id = R.drawable.btn_regreso_icon), contentDescription = "Volver", tint = Color.White)
                     }
                 }
             )
         },
         containerColor = Color(0xFFFFF3E0)
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .padding(16.dp)
+        Box(
+            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            // si no hay nadie registrado
-            if (usuarios.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay usuarios registrados", color = Color.Gray)
+            when (val state = uiState) {
+                is VerUsuariosUiState.Loading -> {
+                    CircularProgressIndicator()
                 }
-            } else {
-                //muestra a los users encontrados y opcion de eliminar la cuenta
-                LazyColumn(modifier = Modifier.fillMaxWidth() ) {
-                    items(usuarios) { user ->
-                        UsuarioItem(
-                            usuario = user,
-                            onEliminar = {
-                                repo.eliminarUsuario(user.id)
-                                usuarios = obtenerUsuarios(repo)
+                is VerUsuariosUiState.Success -> {
+                    if (state.usuarios.isEmpty()) {
+                        Text("No hay usuarios registrados", color = Color.Gray)
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            items(state.usuarios) { user ->
+                                UsuarioItem(
+                                    usuario = user,
+                                    onEliminar = {
+                                        viewModel.eliminarUsuario(user.id)
+                                        Toast.makeText(context, "Usuario ${user.nombre} eliminado", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
+                }
+                is VerUsuariosUiState.Error -> {
+                    Text(state.message, color = Color.Red)
                 }
             }
         }
@@ -93,25 +87,17 @@ fun VerUsuarios(navController: NavHostController) {
 @Composable
 fun UsuarioItem(usuario: Usuario, onEliminar: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor =Color(0xFFFAE6D9)
-        ),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFAE6D9)),
         elevation = CardDefaults.cardElevation(4.dp)
-    ){
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(usuario.nombre, color = Color(0xFFAA847B),fontWeight = FontWeight.Bold, fontSize = MaterialTheme.typography.titleMedium.fontSize)
-
+                Text(usuario.nombre, color = Color(0xFFAA847B), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(usuario.correo, color = Color(0xFFA4A3A8), fontSize = 13.sp)
             }
             IconButton(onClick = onEliminar) {
@@ -123,8 +109,4 @@ fun UsuarioItem(usuario: Usuario, onEliminar: () -> Unit) {
             }
         }
     }
-}
-
-fun obtenerUsuarios(repo: UsuarioRepository): List<Usuario> {
-    return repo.obtenerTodosLosUsuarios()
 }

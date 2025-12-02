@@ -170,25 +170,13 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val id = backStackEntry.arguments?.getInt("id") ?: 0
-                        val repo = UsuarioRepository(LocalContext.current)
-                        val usuario = repo.obtenerUsuarioPorId(id)
-                        if (usuario != null) {
-                            PantallaMascota(navController, usuario)
-                        } else {
-                            LoginScreen(navController)
-                        }
+                        // AHORA: Simplemente pasamos el ID. La pantalla se encarga del resto.
+                        PantallaMascota(navController = navController, usuarioId = id)
                     }
 
                     composable("mascota_admin") {
-                        val adminUsuario = com.example.aplicacion.model.Usuario(
-                            id = -1,
-                            nombre = "Administrador",
-                            correo = "admin",
-                            contrasena = "adminpw",
-                            fechaNacimiento = "2024",
-                            nivelMascota = 100
-                        )
-                        PantallaMascota(navController, adminUsuario, esAdmin = true)
+                        // Para el admin, pasamos un ID especial (-1) y el flag de admin.
+                        PantallaMascota(navController, usuarioId = -1, esAdmin = true)
                     }
 
                     composable("sesion_iniciada_admin") { AdminSesionIniciadaScreen(navController) }

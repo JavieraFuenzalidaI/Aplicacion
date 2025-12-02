@@ -1,23 +1,52 @@
 package com.example.aplicacion.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.example.aplicacion.data.UsuarioRepository
-import com.example.aplicacion.model.Usuario
+import androidx.lifecycle.viewModelScope
+import com.example.aplicacion.data.remote.LoginRequest
+import com.example.aplicacion.data.remote.LoginResponse
+import com.example.aplicacion.data.remote.RetrofitClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
-class LoginViewModel(private val repository: UsuarioRepository) : ViewModel() {
-
-    fun iniciarSesion(correo: String, contrasena: String): Usuario? {
-        return repository.validarUsuario(correo, contrasena)
-    }
+sealed interface LoginUiState {
+    object Idle : LoginUiState
+    object Loading : LoginUiState
+    data class Success(val loginResponse: LoginResponse) : LoginUiState
+    data class Error(val message: String) : LoginUiState
 }
 
-class LoginViewModelFactory(private val repository: UsuarioRepository) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return LoginViewModel(repository) as T
+class LoginViewModel : ViewModel() {
+
+    private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
+
+    val uiState: StateFlow<LoginUiState> = _uiState
+
+
+    fun iniciarSesion(correo: String, contrasena: String) {
+
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+
+            try {
+                val request = LoginRequest(correo, contrasena)
+                val response = RetrofitClient.instance.login(request)
+                if (response.isSuccessful && response.body() != null) {
+                    _uiState.value = LoginUiState.Success(response.body()!!)
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    _uiState.value = LoginUiState.Error(errorBody)
+                }
+
+            } catch (e: Exception) {
+                // Error de red (ej. sin conexión): Actualizar la UI con el mensaje de error
+                _uiState.value = LoginUiState.Error("Error de conexión: ${e.message}")
+            }
         }
-        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+    
+    // Función para resetear el estado si el usuario quiere reintentar
+    fun resetState(){
+        _uiState.value = LoginUiState.Idle
     }
 }
