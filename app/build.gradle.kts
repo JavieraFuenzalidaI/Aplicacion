@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.aplicacion"
-    compileSdk = 36   // ✅ compatible con Health Connect 1.2.0-alpha02 y Compose 1.7.2
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.aplicacion"
-        minSdk = 26      // ✅ requerido por Health Connect
-        targetSdk = 36
+        minSdk = 26
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

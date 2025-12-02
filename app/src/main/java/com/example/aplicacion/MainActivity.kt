@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var healthConnectClient: HealthConnectClient
     private var healthAvailable = false
-
+    private var yaPidioPermisos = false
     // Permisos de Health Connect
     private val healthPermissions = setOf(
         HealthPermission.getReadPermission(HeartRateRecord::class),
@@ -48,13 +48,18 @@ class MainActivity : ComponentActivity() {
 
     // Launcher: petición de permisos de Health Connect
     private val healthPermissionRequest =
-        registerForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
+        registerForActivityResult(
+            PermissionController.createRequestPermissionResultContract()
+        ) { granted ->
+            println("➡️ Resultado permisos Health Connect: $granted")
+            println("➡️ Permisos que estoy pidiendo: $healthPermissions")
+
             if (granted.containsAll(healthPermissions)) {
                 println("✅ Permisos de Health Connect concedidos")
             } else {
                 println("⚠️ Permisos de Health Connect denegados")
             }
-            // Cuando termina Health Connect (concedido o no), pasamos a notificaciones
+
             pedirPermisoNotificacionesSiHaceFalta()
         }
 
@@ -190,8 +195,14 @@ class MainActivity : ComponentActivity() {
                     composable("ver_usuarios") { VerUsuarios(navController) }
                 }
             }
+        }//fin setContent
+    }
+    override fun onResume() {
+        super.onResume()
+        if (!yaPidioPermisos) {
+            yaPidioPermisos = true
+            pedirPermisos()
         }
-        pedirPermisos()
     }
 
 
