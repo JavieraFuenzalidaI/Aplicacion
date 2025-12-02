@@ -36,6 +36,7 @@ import kotlinx.coroutines.runBlocking
 class MainActivity : ComponentActivity() {
 
     private lateinit var healthConnectClient: HealthConnectClient
+    private var healthAvailable = false
 
     // Permisos de Health Connect
     private val healthPermissions = setOf(
@@ -45,7 +46,7 @@ class MainActivity : ComponentActivity() {
         HealthPermission.getWritePermission(StepsRecord::class)
     )
 
-    // Permiso de Health Connect
+    // Launcher: petición de permisos de Health Connect
     private val healthPermissionRequest =
         registerForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
             if (granted.containsAll(healthPermissions)) {
@@ -53,9 +54,11 @@ class MainActivity : ComponentActivity() {
             } else {
                 println("⚠️ Permisos de Health Connect denegados")
             }
+            // Cuando termina Health Connect (concedido o no), pasamos a notificaciones
+            pedirPermisoNotificacionesSiHaceFalta()
         }
 
-    // Permiso de Notificaciones
+    // Launcher: permiso de notificaciones
     private val notificationPermissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
@@ -65,18 +68,58 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    /** ====================== PERMISOS ======================= */
+
+// Solo controla el permiso de notificaciones
+    private fun pedirPermisoNotificacionesSiHaceFalta() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                println("📢 Solicitando permiso de notificaciones...")
+                notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                println("✅ Permiso de notificaciones ya concedido")
+            }
+        }
+    }
+
+    // Función principal que arranca la cadena de permisos
+    private fun pedirPermisos() {
+        if (healthAvailable) {
+            val granted = runBlocking {
+                healthConnectClient.permissionController.getGrantedPermissions()
+            }
+            if (!granted.containsAll(healthPermissions)) {
+                println("📢 Solicitando permisos de Health Connect...")
+                // 👉 solo lanzamos ESTE; al terminar llamará a pedirPermisoNotificacionesSiHaceFalta()
+                healthPermissionRequest.launch(healthPermissions)
+            } else {
+                println("✅ Permisos de Health Connect ya concedidos")
+                // Si ya están concedidos, vamos directo a notificaciones
+                pedirPermisoNotificacionesSiHaceFalta()
+            }
+        } else {
+            // Si no hay Health Connect, solo pedimos notificaciones
+            pedirPermisoNotificacionesSiHaceFalta()
+        }
+    }
+
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // HealthConnect: crear cliente de forma segura
+        // Intentar inicializar Health Connect
         try {
             healthConnectClient = HealthConnectClient.getOrCreate(this)
-            println("✅HealthConnect disponible correctamente.")
-            pedirPermisosHealthConnect()   // ← aquí sí solicitará los permisos
+            healthAvailable = true
+            println("✅ HealthConnect disponible correctamente.")
         } catch (e: Exception) {
-            println("⚠️HealthConnect no está disponible ni como módulo del sistema: ${e.message}")
+            healthAvailable = false
+            println("⚠️ HealthConnect no disponible: ${e.message}")
         }
 
         // Ocultar barras del sistema
@@ -89,20 +132,14 @@ class MainActivity : ComponentActivity() {
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        // Inicializar Health Connect
-        healthConnectClient = HealthConnectClient.getOrCreate(applicationContext)
-
-        pedirPermisoNotificaciones()
-
-        // Cargar contenido
+        // Cargar contenido Compose
         setContent {
             TaskiPetTheme {
                 val context = LocalContext.current
                 val navController = rememberNavController()
-                val sesionManager = remember { com.example.aplicacion.data.SesionManager(context) }
+                val sesionManager = remember { SesionManager(context) }
                 val correoGuardado = sesionManager.obtenerSesion()
 
-                // Navegación principal
                 NavHost(
                     navController = navController,
                     startDestination = when {
@@ -154,37 +191,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        pedirPermisos()
     }
 
-    /** ====================== PERMISOS ======================= */
 
-    private fun pedirPermisosHealthConnect() {
-        // Verifica si ya se concedieron los permisos de Health Connect
-        val granted: Set<String> = runBlocking {
-            healthConnectClient.permissionController.getGrantedPermissions()
-        }
-
-        if (!granted.containsAll(healthPermissions)) {
-            // Si faltan permisos, los solicita
-            healthPermissionRequest.launch(healthPermissions)
-        } else {
-            println("✅ Permisos de Health Connect ya concedidos")
-        }
-    }
-
-    private fun pedirPermisoNotificaciones() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
 
     /** ====================== NOTIFICACIONES ======================= */
-
     fun mostrarNotificacionNivelBajo(context: Context) {
         val channelId = "taskipet_alertas"
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
