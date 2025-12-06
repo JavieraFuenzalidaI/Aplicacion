@@ -18,11 +18,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.PermissionController
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.StepsRecord
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -31,37 +26,8 @@ import androidx.navigation.navArgument
 import com.example.aplicacion.data.*
 import com.example.aplicacion.ui.theme.*
 import com.example.aplicacion.pantallas.*
-import kotlinx.coroutines.runBlocking
 
 class MainActivity : ComponentActivity() {
-
-    private lateinit var healthConnectClient: HealthConnectClient
-    private var healthAvailable = false
-    private var yaPidioPermisos = false
-    // Permisos de Health Connect
-    private val healthPermissions = setOf(
-        HealthPermission.getReadPermission(HeartRateRecord::class),
-        HealthPermission.getWritePermission(HeartRateRecord::class),
-        HealthPermission.getReadPermission(StepsRecord::class),
-        HealthPermission.getWritePermission(StepsRecord::class)
-    )
-
-    // Launcher: petición de permisos de Health Connect
-    private val healthPermissionRequest =
-        registerForActivityResult(
-            PermissionController.createRequestPermissionResultContract()
-        ) { granted ->
-            println("➡️ Resultado permisos Health Connect: $granted")
-            println("➡️ Permisos que estoy pidiendo: $healthPermissions")
-
-            if (granted.containsAll(healthPermissions)) {
-                println("✅ Permisos de Health Connect concedidos")
-            } else {
-                println("⚠️ Permisos de Health Connect denegados")
-            }
-
-            pedirPermisoNotificacionesSiHaceFalta()
-        }
 
     // Launcher: permiso de notificaciones
     private val notificationPermissionRequest =
@@ -73,9 +39,7 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    /** ====================== PERMISOS ======================= */
-
-// Solo controla el permiso de notificaciones
+    // Función para pedir el permiso de notificaciones
     private fun pedirPermisoNotificacionesSiHaceFalta() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
@@ -91,41 +55,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Función principal que arranca la cadena de permisos
-    private fun pedirPermisos() {
-        if (healthAvailable) {
-            val granted = runBlocking {
-                healthConnectClient.permissionController.getGrantedPermissions()
-            }
-            if (!granted.containsAll(healthPermissions)) {
-                println("📢 Solicitando permisos de Health Connect...")
-                // 👉 solo lanzamos ESTE; al terminar llamará a pedirPermisoNotificacionesSiHaceFalta()
-                healthPermissionRequest.launch(healthPermissions)
-            } else {
-                println("✅ Permisos de Health Connect ya concedidos")
-                // Si ya están concedidos, vamos directo a notificaciones
-                pedirPermisoNotificacionesSiHaceFalta()
-            }
-        } else {
-            // Si no hay Health Connect, solo pedimos notificaciones
-            pedirPermisoNotificacionesSiHaceFalta()
-        }
-    }
-
     @SuppressLint("WrongConstant")
     @RequiresApi(Build.VERSION_CODES.R)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Intentar inicializar Health Connect
-        try {
-            healthConnectClient = HealthConnectClient.getOrCreate(this)
-            healthAvailable = true
-            println("✅ HealthConnect disponible correctamente.")
-        } catch (e: Exception) {
-            healthAvailable = false
-            println("⚠️ HealthConnect no disponible: ${e.message}")
-        }
 
         // Ocultar barras del sistema
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -170,12 +103,18 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val id = backStackEntry.arguments?.getInt("id") ?: 0
-                        // AHORA: Simplemente pasamos el ID. La pantalla se encarga del resto.
                         PantallaMascota(navController = navController, usuarioId = id)
                     }
 
+                    composable(
+                        route = "generar_tareas/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val id = backStackEntry.arguments?.getInt("id") ?: 0
+                        GenerarTareasScreen(idUsuario = id, onTareasGuardadas = { navController.popBackStack() })
+                    }
+
                     composable("mascota_admin") {
-                        // Para el admin, pasamos un ID especial (-1) y el flag de admin.
                         PantallaMascota(navController, usuarioId = -1, esAdmin = true)
                     }
 
@@ -187,13 +126,8 @@ class MainActivity : ComponentActivity() {
     }
     override fun onResume() {
         super.onResume()
-        if (!yaPidioPermisos) {
-            yaPidioPermisos = true
-            pedirPermisos()
-        }
+        pedirPermisoNotificacionesSiHaceFalta()
     }
-
-
 
     /** ====================== NOTIFICACIONES ======================= */
     fun mostrarNotificacionNivelBajo(context: Context) {

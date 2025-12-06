@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -23,8 +24,6 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
-import com.example.aplicacion.data.remote.Tarea
-import com.example.aplicacion.data.remote.Usuario
 import com.example.aplicacion.viewmodel.MascotaScreenData
 import com.example.aplicacion.viewmodel.MascotaUiState
 import com.example.aplicacion.viewmodel.PantallaMascotaViewModel
@@ -42,31 +41,30 @@ fun PantallaMascota(
 
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when (val state = uiState) {
-            is MascotaUiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    when (val state = uiState) {
+        is MascotaUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
-            is MascotaUiState.Success -> {
-                PantallaMascotaContent(navController, state.data, esAdmin, viewModel)
-            }
-            is MascotaUiState.Error -> {
-                Text(
-                    text = state.message,
-                    color = Color.Red,
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                )
+        }
+        is MascotaUiState.Success -> {
+            PantallaMascotaContent(navController, state.data, esAdmin, viewModel)
+        }
+        is MascotaUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = state.message, color = Color.Red)
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PantallaMascotaContent(
     navController: NavHostController,
     screenData: MascotaScreenData,
     esAdmin: Boolean,
-    viewModel: PantallaMascotaViewModel // Pasamos el ViewModel para poder llamar a sus funciones
+    viewModel: PantallaMascotaViewModel
 ) {
     val usuario = screenData.usuario
     val tareasFromApi = screenData.tareas
@@ -88,72 +86,86 @@ private fun PantallaMascotaContent(
         else -> R.drawable.av_gato_80_100
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(painter = painterResource(id = R.drawable.fondo_pantalla_mascota), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Image(painter = painterResource(id = corazonRes), contentDescription = "Estado de ánimo", modifier = Modifier.align(Alignment.TopCenter).padding(top = 150.dp).size(150.dp))
-        Image(painter = painterResource(id = gatoRes), contentDescription = "Mascota", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 65.dp, start = 20.dp))
-
-        IconButton(
-            onClick = {
-                if (esAdmin) navController.navigate("sesion_iniciada_admin") { popUpTo(0) }
-                else navController.navigate("sesion_iniciada/${usuario.correo}") { popUpTo(0) }
-            },
-            modifier = Modifier.align(Alignment.TopStart).padding(30.dp).size(85.dp)
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate("generar_tareas/${usuario.id}") },
+                containerColor = Color(0xFFDE9C7C),
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = "Generar tareas con IA")
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-            Image(painter = painterResource(id = R.drawable.btn_regreso_icon), contentDescription = "Volver")
-        }
+            Image(painter = painterResource(id = R.drawable.fondo_pantalla_mascota), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Image(painter = painterResource(id = corazonRes), contentDescription = "Estado de ánimo", modifier = Modifier.align(Alignment.TopCenter).padding(top = 150.dp).size(150.dp))
+            Image(painter = painterResource(id = gatoRes), contentDescription = "Mascota", modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 65.dp, start = 20.dp))
 
-        IconButton(onClick = { menuExpandido = !menuExpandido }, modifier = Modifier.align(Alignment.TopEnd).padding(30.dp).size(85.dp).zIndex(2f)) {
-            Image(painter = painterResource(id = R.drawable.tareas_icon), contentDescription = "Tareas")
-        }
+            IconButton(
+                onClick = {
+                    if (esAdmin) navController.navigate("sesion_iniciada_admin") { popUpTo(0) }
+                    else navController.navigate("sesion_iniciada/${usuario.correo}") { popUpTo(0) }
+                },
+                modifier = Modifier.align(Alignment.TopStart).padding(30.dp).size(85.dp)
+            ) {
+                Image(painter = painterResource(id = R.drawable.btn_regreso_icon), contentDescription = "Volver")
+            }
 
-        AnimatedVisibility(visible = menuExpandido, modifier = Modifier.align(Alignment.TopEnd).padding(end = 20.dp, top = 130.dp).zIndex(1f)) {
-            Surface(color = Color(0xFFFFE0CC), shape = RoundedCornerShape(12.dp), shadowElevation = 6.dp, border = BorderStroke(2.dp, Color.White), modifier = Modifier.width(260.dp)) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(12.dp)) {
-                    Text("Mis Tareas", fontSize = 20.sp, color = Color(0xFF8B5C42))
-                    Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
+            IconButton(onClick = { menuExpandido = !menuExpandido }, modifier = Modifier.align(Alignment.TopEnd).padding(30.dp).size(85.dp).zIndex(2f)) {
+                Image(painter = painterResource(id = R.drawable.tareas_icon), contentDescription = "Tareas")
+            }
 
-                    LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                        items(tareasFromApi) { tarea ->
-                            val isChecked = tarea.completado == 1
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp)
-                                    .clickable(enabled = !isChecked) {
-                                        // ACCIÓN: Completar tarea
-                                        val nuevoNivel = (usuario.nivel + tarea.puntos).coerceAtMost(100)
-                                        viewModel.completarTarea(tarea, nuevoNivel)
-                                    }
-                            ) {
-                                Checkbox(checked = isChecked, onCheckedChange = null, enabled = !isChecked)
-                                Text(
-                                    text = "${tarea.descripcion} (+${tarea.puntos})",
-                                    color = if (isChecked) Color(0x99755C48) else Color(0xFF755C48),
-                                    textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None,
-                                    fontSize = 14.sp
-                                )
+            AnimatedVisibility(visible = menuExpandido, modifier = Modifier.align(Alignment.TopEnd).padding(end = 20.dp, top = 130.dp).zIndex(1f)) {
+                Surface(color = Color(0xFFFFE0CC), shape = RoundedCornerShape(12.dp), shadowElevation = 6.dp, border = BorderStroke(2.dp, Color.White), modifier = Modifier.width(260.dp)) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(12.dp)) {
+                        Text("Mis Tareas", fontSize = 20.sp, color = Color(0xFF8B5C42))
+                        Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
+
+                        LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                            items(tareasFromApi) { tarea ->
+                                val isChecked = tarea.completado == 1
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp)
+                                        .clickable(enabled = !isChecked) {
+                                            val nuevoNivel = (usuario.nivel + tarea.puntos).coerceAtMost(100)
+                                            viewModel.completarTarea(tarea, nuevoNivel)
+                                        }
+                                ) {
+                                    Checkbox(checked = isChecked, onCheckedChange = null, enabled = !isChecked)
+                                    Text(
+                                        text = "${tarea.descripcion} (+${tarea.puntos})",
+                                        color = if (isChecked) Color(0x99755C48) else Color(0xFF755C48),
+                                        textDecoration = if (isChecked) TextDecoration.LineThrough else TextDecoration.None,
+                                        fontSize = 14.sp
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
+                        Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
 
-                    var nuevaTareaText by remember { mutableStateOf("") }
+                        var nuevaTareaText by remember { mutableStateOf("") }
 
-                    OutlinedTextField(value = nuevaTareaText, onValueChange = { nuevaTareaText = it }, placeholder = { Text("Añadir nueva tarea...") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                        OutlinedTextField(value = nuevaTareaText, onValueChange = { nuevaTareaText = it }, placeholder = { Text("Añadir nueva tarea...") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
-                    Button(
-                        onClick = {
-                            // ACCIÓN: Agregar nueva tarea
-                            viewModel.agregarTarea(usuario.id, nuevaTareaText)
-                            nuevaTareaText = "" // Limpiamos el campo
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDE9C7C)),
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                    ) {
-                        Text("Agregar tarea", color = Color.White, fontSize = 13.sp)
+                        Button(
+                            onClick = {
+                                viewModel.agregarTarea(usuario.id, nuevaTareaText)
+                                nuevaTareaText = ""
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDE9C7C)),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Text("Agregar tarea", color = Color.White, fontSize = 13.sp)
+                        }
                     }
                 }
             }

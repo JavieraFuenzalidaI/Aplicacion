@@ -1,13 +1,10 @@
 package com.example.aplicacion.pantallas
 
-import android.widget.Toast
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,16 +27,15 @@ import com.example.aplicacion.viewmodel.UsuarioUiState
 fun SesionIniciadaScreen(
     navController: NavHostController,
     correo: String,
-    viewModel: SesionIniciadaViewModel = viewModel()
+    sesionViewModel: SesionIniciadaViewModel = viewModel()
 ) {
     LaunchedEffect(key1 = correo) {
-        viewModel.cargarUsuario(correo)
+        sesionViewModel.cargarUsuario(correo)
     }
 
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by sesionViewModel.uiState.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo
         Image(
             painter = painterResource(id = R.drawable.fondo_sesion_iniciada),
             contentDescription = "Fondo",
@@ -73,9 +69,8 @@ private fun ContenidoSesionIniciada(
 ) {
     val context = LocalContext.current
     val sesionManager = remember { SesionManager(context) }
-
+    
     Box(modifier = Modifier.fillMaxSize()) {
-        // Contenido principal centrado
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,7 +88,7 @@ private fun ContenidoSesionIniciada(
                 color = Color(0xFF6D4C41)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = "Pulsa para empezar",
@@ -102,7 +97,6 @@ private fun ContenidoSesionIniciada(
             )
         }
 
-        // Botón para cerrar sesión
         Button(
             onClick = {
                 sesionManager.cerrarSesion()
@@ -117,7 +111,6 @@ private fun ContenidoSesionIniciada(
             Text("Cerrar Sesión", fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
 
-        // Lógica del botón de admin
         if (usuario.correo.lowercase() == "admin") {
             Button(
                 onClick = { navController.navigate("ver_usuarios") },

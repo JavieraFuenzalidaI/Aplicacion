@@ -29,7 +29,6 @@ android {
     }
 
     compileOptions {
-        // ✅ usa el mismo nivel que tu Gradle JDK (17 o 21)
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -42,7 +41,6 @@ android {
     }
 
     composeOptions {
-        // ✅ versión del compilador Compose compatible con 1.7.x
         kotlinCompilerExtensionVersion = "1.7.2"
     }
 
@@ -81,6 +79,9 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // --- IA Generativa de Gemini (VERSIÓN ACTUALIZADA) ---
+    implementation("com.google.ai.client.generativeai:generativeai:0.6.0")
+
     // --- Room / base de datos ---
     implementation(libs.androidx.room.common.jvm)
 
@@ -89,9 +90,6 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui)
-
-    // --- Health Connect ---
-    implementation("androidx.health.connect:connect-client:1.2.0-alpha02")
 
     // --- Tests ---
     testImplementation(libs.junit)
