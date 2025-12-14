@@ -17,8 +17,9 @@ class UsuarioDbHelper(context: Context) :
         const val COLUMN_NOMBRE = "nombre"
         const val COLUMN_CORREO = "correo"
         const val COLUMN_CONTRASENA = "contrasena"
-        const val COLUMN_FECHA = "fechaNacimiento"
         const val COLUMN_NIVEL = "nivelMascota"
+        const val COLUMN_ROL = "rol"
+
 
         // Tabla de tareas
         const val TABLE_TAREAS = "tareas_usuario"
@@ -36,8 +37,8 @@ class UsuarioDbHelper(context: Context) :
                 $COLUMN_NOMBRE TEXT NOT NULL,
                 $COLUMN_CORREO TEXT UNIQUE NOT NULL,
                 $COLUMN_CONTRASENA TEXT NOT NULL,
-                $COLUMN_FECHA TEXT NOT NULL,
-                $COLUMN_NIVEL INTEGER DEFAULT 0
+                $COLUMN_NIVEL INTEGER DEFAULT 0,
+                $COLUMN_ROL TEXT NOT NULL
             )
         """.trimIndent()
 

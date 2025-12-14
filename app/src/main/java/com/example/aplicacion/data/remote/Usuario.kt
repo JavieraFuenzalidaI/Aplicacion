@@ -8,5 +8,6 @@ data class Usuario(
     @SerializedName("correo") val correo: String,
     @SerializedName("contrasena") val contrasena: String,
     @SerializedName("fecha") val fecha: String,
-    @SerializedName("nivel") val nivel: Int
+    @SerializedName("nivel") val nivel: Int,
+    @SerializedName("rol") val rol: String
 )

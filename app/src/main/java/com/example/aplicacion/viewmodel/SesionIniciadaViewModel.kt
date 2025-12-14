@@ -2,6 +2,7 @@ package com.example.aplicacion.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacion.data.remote.RetrofitClient
 import com.example.aplicacion.data.remote.Usuario
@@ -16,23 +17,31 @@ sealed interface UsuarioUiState {
     object Loading : UsuarioUiState
 }
 
-class SesionIniciadaViewModel(application: Application) : AndroidViewModel(application) {
+class SesionIniciadaViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow<UsuarioUiState>(UsuarioUiState.Loading)
-    val uiState: StateFlow<UsuarioUiState> = _uiState
+    // Cambiamos el estado para que pueda ser nulo al principio
+    private val _usuario = MutableStateFlow<Usuario?>(null)
+    val usuario: StateFlow<Usuario?> = _usuario
 
-    fun cargarUsuario(correo: String) {
+    fun cargarUsuarioPorId(id: Int) {
+        // Evitamos llamadas innecesarias si el ID es 0 o inválido
+        if (id <= 0) return
+
         viewModelScope.launch {
-            _uiState.value = UsuarioUiState.Loading
             try {
-                val response = RetrofitClient.instance.getUsuarioPorCorreo(correo)
-                if (response.isSuccessful && response.body() != null) {
-                    _uiState.value = UsuarioUiState.Success(response.body()!!)
+                // Llamamos al endpoint que busca por ID
+                val response = RetrofitClient.instance.getUsuario(id)
+                if (response.isSuccessful) {
+                    _usuario.value = response.body()
                 } else {
-                    _uiState.value = UsuarioUiState.Error("Error al cargar el usuario.")
+                    // Si hay un error en la respuesta, lo dejamos nulo
+                    _usuario.value = null
+                    println("Error al cargar usuario: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
-                _uiState.value = UsuarioUiState.Error("Error de conexión: ${e.message}")
+                // Si hay un error de conexión, también lo dejamos nulo
+                _usuario.value = null
+                println("Error de conexión: ${e.message}")
             }
         }
     }

@@ -76,26 +76,65 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val navController = rememberNavController()
                 val sesionManager = remember { SesionManager(context) }
-                val correoGuardado = sesionManager.obtenerSesion()
+                val sesionGuardada = sesionManager.obtenerSesion()
+
+                val startDestination = when {
+                    sesionGuardada == "admin" -> "sesion_iniciada_admin"
+                    sesionGuardada?.startsWith("superusuario/") == true -> {
+                        val id = sesionGuardada.split("/").getOrNull(1)?.toIntOrNull() ?: 0
+                        "sesion_iniciada_superusuario/$id"
+                    }
+                    sesionGuardada?.startsWith("moderador/") == true -> {
+                        val id = sesionGuardada.split("/").getOrNull(1)?.toIntOrNull() ?: 0
+                        "sesion_iniciada_moderador/$id"
+                    }
+                    sesionGuardada != null -> {
+                        // Lógica unificada para "usuario/ID" o solo "ID"
+                        val id = sesionGuardada.substringAfter("/").toIntOrNull() ?: sesionGuardada.toIntOrNull() ?: 0
+                        "sesion_iniciada/$id"
+                    }
+                    else -> "login"
+                }
 
                 NavHost(
                     navController = navController,
-                    startDestination = when {
-                        correoGuardado == "admin" -> "sesion_iniciada_admin"
-                        correoGuardado != null -> "sesion_iniciada/${correoGuardado}"
-                        else -> "home"
-                    }
+                    startDestination = startDestination
                 ) {
-                    composable("home") { HomeScreen(navController) }
-                    composable("login") { LoginScreen(navController) }
-                    composable("register") { RegisterScreen(navController) }
+
+                    composable("login") {
+                        LoginScreen(navController)
+                    }
+
+                    composable("register") {
+                        RegisterScreen(navController)
+                    }
+                    
+                    composable(
+                        route = "sesion_iniciada/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val id = backStackEntry.arguments?.getInt("id") ?: 0
+                        SesionIniciadaScreen(navController, id)
+                    }
 
                     composable(
-                        route = "sesion_iniciada/{correo}",
-                        arguments = listOf(navArgument("correo") { type = NavType.StringType })
+                        route = "sesion_iniciada_superusuario/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.IntType })
                     ) { backStackEntry ->
-                        val correo = backStackEntry.arguments?.getString("correo")!!
-                        SesionIniciadaScreen(navController, correo)
+                        val id = backStackEntry.arguments?.getInt("id") ?: 0
+                        SuperUsuarioSesionIniciadaScreen(navController, id)
+                    }
+
+                    composable(
+                        route = "sesion_iniciada_moderador/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.IntType })
+                    ) { backStackEntry ->
+                        val id = backStackEntry.arguments?.getInt("id") ?: 0
+                        ModeradorSesionIniciadaScreen(navController, id)
+                    }
+
+                    composable("sesion_iniciada_admin") {
+                        AdminSesionIniciadaScreen(navController)
                     }
 
                     composable(
@@ -103,7 +142,19 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val id = backStackEntry.arguments?.getInt("id") ?: 0
-                        PantallaMascota(navController = navController, usuarioId = id)
+                        PantallaMascota(
+                            navController = navController,
+                            usuarioId = id,
+                            esAdmin = false
+                        )
+                    }
+
+                    composable("mascota_admin") {
+                        PantallaMascota(
+                            navController = navController,
+                            usuarioId = 0, // El admin no tiene un ID de usuario específico aquí
+                            esAdmin = true
+                        )
                     }
 
                     composable(
@@ -111,15 +162,11 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val id = backStackEntry.arguments?.getInt("id") ?: 0
-                        GenerarTareasScreen(idUsuario = id, onTareasGuardadas = { navController.popBackStack() })
+                        GenerarTareasScreen(
+                            idUsuario = id,
+                            onTareasGuardadas = { navController.popBackStack() }
+                        )
                     }
-
-                    composable("mascota_admin") {
-                        PantallaMascota(navController, usuarioId = -1, esAdmin = true)
-                    }
-
-                    composable("sesion_iniciada_admin") { AdminSesionIniciadaScreen(navController) }
-                    composable("ver_usuarios") { VerUsuarios(navController) }
                 }
             }
         }//fin setContent

@@ -35,7 +35,9 @@ class RegistroViewModel(
                 correo = correo, 
                 contrasena = contrasena, 
                 fecha = fecha, 
-                nivel = 0
+                nivel = 0,
+                // AÑADIMOS EL ROL POR DEFECTO
+                rol = "usuario"
             )
             _uiState.value = repository.registrarUsuario(nuevoUsuario)
         }

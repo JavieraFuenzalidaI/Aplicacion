@@ -62,8 +62,8 @@ class GenerarTareasViewModel : ViewModel() {
             tareasJson.map {
                 Tarea(
                     id = 0,
-                    descripcion = it.nombre,
-                    puntos = 10,
+                    descripcion = it.descripcion,
+                    puntos = it.puntos,
                     completado = 0,
                     usuarioId = idUsuario
                 )
@@ -74,7 +74,10 @@ class GenerarTareasViewModel : ViewModel() {
         }
     }
 
-    private data class TareaJson(val nombre: String, val descripcion: String)
+    private data class TareaJson(
+        val descripcion: String,
+        val puntos: Int,
+        val usuario_id: Int)
 
     fun resetState() {
         _uiState.value = GenerarTareasUiState.Idle

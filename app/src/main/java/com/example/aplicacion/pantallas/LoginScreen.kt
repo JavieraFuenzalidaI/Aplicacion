@@ -10,6 +10,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -33,27 +35,39 @@ import com.example.aplicacion.viewmodel.LoginViewModel
 fun LoginScreen(navController: NavHostController) {
     val context = LocalContext.current
     val sesionManager = remember { SesionManager(context) }
-
     val viewModel: LoginViewModel = viewModel()
-
     val loginState by viewModel.uiState.collectAsState()
 
     // --- Efectos secundarios basados en el estado ---
     LaunchedEffect(loginState) {
         when (val state = loginState) {
             is LoginUiState.Success -> {
-                // Éxito: Guardamos sesión, mostramos Toast y navegamos.
-                val correo = state.loginResponse.usuario.correo
-                sesionManager.guardarSesion(correo)
+
+                val usuario = state.loginResponse.usuario 
+
+                val sesionParaGuardar = when (usuario.rol) {
+                    "admin" -> "admin"
+                    else -> "${usuario.rol}/${usuario.id}"
+                }
+                sesionManager.guardarSesion(sesionParaGuardar)
+
                 Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                navController.navigate("sesion_iniciada/$correo") {
-                    // Limpiamos la pila para que el usuario no vuelva al login.
+
+                val rutaDestino = when (usuario.rol) {
+                    "admin" -> "sesion_iniciada_admin"
+                    "superusuario" -> "sesion_iniciada_superusuario/${usuario.id}"
+                    "moderador" -> "sesion_iniciada_moderador/${usuario.id}"
+                    else -> "sesion_iniciada/${usuario.id}"
+                }
+
+                navController.navigate(rutaDestino) {
                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
-                viewModel.resetState() // Reseteamos el estado para futuras operaciones.
+
+                viewModel.resetState()
+
             }
             is LoginUiState.Error -> {
-                // Error: Mostramos el mensaje que viene de la API/ViewModel.
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
                 viewModel.resetState() // Permitimos que el usuario reintente.
             }
@@ -76,7 +90,7 @@ fun LoginScreen(navController: NavHostController) {
             CircularProgressIndicator(modifier = Modifier.size(64.dp))
         } else {
             // Si no está cargando, mostramos el formulario.
-            LoginForm(navController, viewModel, sesionManager)
+            LoginForm(navController, viewModel)
         }
     }
 }
@@ -86,7 +100,6 @@ fun LoginScreen(navController: NavHostController) {
 private fun LoginForm(
     navController: NavHostController,
     viewModel: LoginViewModel,
-    sesionManager: SesionManager
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -121,7 +134,7 @@ private fun LoginForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = {
                 focusManager.clearFocus()
-                handleLoginClick(email, password, context, navController, viewModel)
+                handleLoginClick(email, password, context, viewModel)
             }),
             visualTransformation = PasswordVisualTransformation()
         )
@@ -135,7 +148,7 @@ private fun LoginForm(
                 .width(180.dp)
                 .height(80.dp)
                 .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
-                    handleLoginClick(email, password, context, navController, viewModel)
+                    handleLoginClick(email, password, context, viewModel)
                 },
             contentScale = ContentScale.Fit
         )
@@ -156,20 +169,12 @@ private fun handleLoginClick(
     email: String,
     password: String,
     context: android.content.Context,
-    navController: NavHostController,
     viewModel: LoginViewModel
 ) {
     if (email.isBlank() || password.isBlank()) {
         Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
         return
     }
-    // Mantenemos el login de admin como caso especial.
-    if (email == "admin" && password == "adminpw") {
-        Toast.makeText(context, "Bienvenido/a Administrador/a", Toast.LENGTH_SHORT).show()
-        navController.navigate("sesion_iniciada_admin")
-        return
-    }
-    
     // Para cualquier otro usuario, llamamos al ViewModel para que inicie la llamada a la API.
     viewModel.iniciarSesion(email, password)
 }

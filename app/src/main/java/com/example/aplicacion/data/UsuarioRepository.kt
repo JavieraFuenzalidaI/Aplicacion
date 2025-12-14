@@ -20,8 +20,8 @@ class UsuarioRepository(context: Context) {
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NOMBRE)),
                 correo = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CORREO)),
                 contrasena = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CONTRASENA)),
-                fechaNacimiento = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_FECHA)),
-                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL))
+                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL)),
+                rol = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_ROL))
             )
         }
         cursor.close()
@@ -34,8 +34,8 @@ class UsuarioRepository(context: Context) {
             put(UsuarioDbHelper.COLUMN_NOMBRE, usuario.nombre)
             put(UsuarioDbHelper.COLUMN_CORREO, usuario.correo)
             put(UsuarioDbHelper.COLUMN_CONTRASENA, usuario.contrasena)
-            put(UsuarioDbHelper.COLUMN_FECHA, usuario.fechaNacimiento)
             put(UsuarioDbHelper.COLUMN_NIVEL, 0)
+            put(UsuarioDbHelper.COLUMN_ROL, "usuario")
         }
         val resultado = db.insert(UsuarioDbHelper.TABLE_USUARIOS, null, values)
         db.close()
@@ -53,8 +53,8 @@ class UsuarioRepository(context: Context) {
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NOMBRE)),
                 correo = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CORREO)),
                 contrasena = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CONTRASENA)),
-                fechaNacimiento = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_FECHA)),
-                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL))
+                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL)),
+                rol = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_ROL))
             )
         }
         cursor.close()
@@ -124,8 +124,8 @@ class UsuarioRepository(context: Context) {
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NOMBRE)),
                 correo = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CORREO)),
                 contrasena = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CONTRASENA)),
-                fechaNacimiento = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_FECHA)),
-                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL))
+                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL)),
+                rol = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_ROL))
             )
         }
         cursor.close()
@@ -144,8 +144,8 @@ class UsuarioRepository(context: Context) {
                 nombre = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NOMBRE)),
                 correo = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CORREO)),
                 contrasena = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_CONTRASENA)),
-                fechaNacimiento = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_FECHA)),
-                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL))
+                nivelMascota = cursor.getInt(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_NIVEL)),
+                rol = cursor.getString(cursor.getColumnIndexOrThrow(UsuarioDbHelper.COLUMN_ROL))
             )
             lista.add(usuario)
         }

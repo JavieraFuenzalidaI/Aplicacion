@@ -32,7 +32,7 @@ class RegistroViewModelTest {
     @Test
     fun `cuando el registro es exitoso, el estado es Success`() {
         // Given
-        val usuario = Usuario(1, "Test", "test@test.com", "pass", "2024-01-01", 1)
+        val usuario = Usuario(1, "Test", "test@test.com", "pass", "2024-01-01", 1, "usuario")
         coEvery { mockRepository.registrarUsuario(any()) } returns RegistroUiState.Success(usuario)
 
         // When

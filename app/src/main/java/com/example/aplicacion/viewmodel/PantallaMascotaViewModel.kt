@@ -1,10 +1,13 @@
 package com.example.aplicacion.viewmodel
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacion.data.remote.RetrofitClient
 import com.example.aplicacion.data.remote.Tarea
 import com.example.aplicacion.data.remote.Usuario
+import com.example.aplicacion.util.StepCounter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,7 +15,8 @@ import kotlinx.coroutines.launch
 // Clase de datos para contener la información combinada de la pantalla
 data class MascotaScreenData(
     val usuario: Usuario,
-    val tareas: List<Tarea>
+    val tareas: List<Tarea>,
+    val kilometros: Float = 0f
 )
 
 // Estados de la UI para la pantalla de la mascota
@@ -26,11 +30,41 @@ class PantallaMascotaViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow<MascotaUiState>(MascotaUiState.Loading)
     val uiState: StateFlow<MascotaUiState> = _uiState
+    private lateinit var stepCounter: StepCounter
+    private var initialSteps = -1 // Pasos iniciales al iniciar el ViewModel
 
+    fun initializeStepCounter(application: Application) {
+        if (::stepCounter.isInitialized) return // Evitar reinicialización
+
+        stepCounter = StepCounter(application)
+        viewModelScope.launch {
+            stepCounter.getSteps().collect { steps ->
+                if (initialSteps == -1) {
+                    initialSteps = steps
+                }
+                val currentSteps = steps - initialSteps
+                val kilometros = convertirPasosAKilometros(currentSteps)
+
+                // Actualizar el estado de la UI si ya es Success
+                val currentState = _uiState.value
+                if (currentState is MascotaUiState.Success) {
+                    _uiState.value = currentState.copy(
+                        data = currentState.data.copy(kilometros = kilometros)
+                    )
+                }
+            }
+        }
+    }
+
+    private fun convertirPasosAKilometros(pasos: Int): Float {
+        // Estimación simple: 1 km son aproximadamente 1312 pasos.
+        // Puedes ajustar este valor para mayor precisión.
+        return (pasos / 1312.0f)
+    }
     fun cargarDatosMascota(usuarioId: Int) {
         // Si el ID es -1 (admin), no cargamos nada.
         if (usuarioId == -1) {
-            val admin = Usuario(-1, "Administrador", "admin", "", "", 100)
+            val admin = Usuario(-1, "Administrador", "admin", "", "", 100, "admin")
             _uiState.value = MascotaUiState.Success(MascotaScreenData(admin, emptyList()))
             return
         }
@@ -94,5 +128,18 @@ class PantallaMascotaViewModel : ViewModel() {
                 }
             }
         }
+    }
+}
+class PantallaMascotaViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PantallaMascotaViewModel::class.java)) {
+            // Creamos una instancia del ViewModel...
+            val viewModel = PantallaMascotaViewModel()
+            // ...y llamamos a su función de inicialización.
+            viewModel.initializeStepCounter(application)
+            @Suppress("UNCHECKED_CAST")
+            return viewModel as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

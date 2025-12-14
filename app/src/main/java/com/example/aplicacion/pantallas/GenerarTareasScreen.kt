@@ -69,8 +69,6 @@ private fun ListaDeTareasGeneradas(
     tareas: List<Tarea>,
     onTareasGuardadas: () -> Unit
 ) {
-    // Aquí deberías tener la lógica para guardar las tareas en tu base de datos o API
-    // Por ahora, solo mostraremos un botón de confirmación.
 
     Column {
         Text("Tareas sugeridas por la IA:")

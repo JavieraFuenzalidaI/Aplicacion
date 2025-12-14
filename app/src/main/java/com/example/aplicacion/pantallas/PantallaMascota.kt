@@ -1,5 +1,6 @@
 package com.example.aplicacion.pantallas
 
+import android.app.Application
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -27,13 +29,16 @@ import com.example.aplicacion.R
 import com.example.aplicacion.viewmodel.MascotaScreenData
 import com.example.aplicacion.viewmodel.MascotaUiState
 import com.example.aplicacion.viewmodel.PantallaMascotaViewModel
+import com.example.aplicacion.viewmodel.PantallaMascotaViewModelFactory
 
 @Composable
 fun PantallaMascota(
     navController: NavHostController,
     usuarioId: Int,
     esAdmin: Boolean = false,
-    viewModel: PantallaMascotaViewModel = viewModel()
+    viewModel: PantallaMascotaViewModel = viewModel(
+        factory = PantallaMascotaViewModelFactory(LocalContext.current.applicationContext as Application)
+    )
 ) {
     LaunchedEffect(usuarioId) {
         viewModel.cargarDatosMascota(usuarioId)
@@ -125,6 +130,24 @@ private fun PantallaMascotaContent(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(12.dp)) {
                         Text("Mis Tareas", fontSize = 20.sp, color = Color(0xFF8B5C42))
                         Divider(color = Color(0xFFDE9C7C), thickness = 1.5.dp)
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0x99FFFFFF)), // Fondo semitransparente
+                        ) {
+                            Text(
+                                // Usamos el valor de kilometros que viene en screenData
+                                text = String.format("Km recorridos hoy: %.2f", screenData.kilometros),
+                                fontSize = 16.sp,
+                                color = Color(0xFF755C48), // Un color que combine
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+                        }
 
                         LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
                             items(tareasFromApi) { tarea ->

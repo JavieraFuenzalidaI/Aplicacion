@@ -10,6 +10,6 @@ data class Usuario(
     val nombre: String,
     val correo: String,
     val contrasena: String,
-    val fechaNacimiento: String,
-    val nivelMascota: Int = 0
+    val nivelMascota: Int = 0,
+    val rol: String
 )
