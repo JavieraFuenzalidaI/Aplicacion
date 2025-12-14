@@ -3,22 +3,20 @@ package com.example.aplicacion.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import kotlinx.coroutines.runBlocking
 import java.text.SimpleDateFormat
 import java.util.*
 
 object PreferenciasDiarias {
 
-    /** SharedPreferences individuales por usuario */
     private fun prefs(context: Context, userId: Int): SharedPreferences =
         context.getSharedPreferences("MascotaPrefs_$userId", Context.MODE_PRIVATE)
 
-    /** Fecha actual en formato AAAA-MM-DD */
     fun fechaActual(): String {
         val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return sdf.format(Date())
     }
 
-    /** Obtiene las 3 tareas sugeridas del día o genera nuevas si es un nuevo día */
     fun obtenerTareasDelDia(
         context: Context,
         userId: Int,
@@ -55,7 +53,6 @@ object PreferenciasDiarias {
         }
     }
 
-    /** Guarda una tarea completada para ese usuario */
     fun guardarTareaCompletada(context: Context, userId: Int, tarea: String) {
         val p = prefs(context, userId)
         val key = "tareasCompletadas"
@@ -69,7 +66,6 @@ object PreferenciasDiarias {
         return p.getStringSet("tareasCompletadas", emptySet()) ?: emptySet()
     }
 
-    /** Guarda los pasos del día */
     fun guardarPasos(context: Context, userId: Int, pasos: Int) {
         val p = prefs(context, userId)
         val hoy = fechaActual()
@@ -98,7 +94,6 @@ object PreferenciasDiarias {
         }
     }
 
-    /** Reinicia el nivel de la mascota si es un día nuevo */
     fun reiniciarNivelSiEsNuevoDia(
         context: Context,
         repo: UsuarioRepository,
@@ -110,15 +105,19 @@ object PreferenciasDiarias {
 
         return if (ultimaFecha != hoy) {
             val nuevoNivel = (0..20).random()
-            repo.actualizarNivelUsuario(userId, nuevoNivel)
+            // repo.actualizarNivelUsuario(userId, nuevoNivel)
             p.edit { putString("fecha_nivel", hoy) }
             nuevoNivel
         } else {
-            repo.obtenerUsuarioPorId(userId)?.nivelMascota ?: 0
+            var nivelActual = 0
+            runBlocking {
+                // val usuario = repo.obtenerUsuarioPorId(userId.toString())
+                // nivelActual = usuario.nivel
+            }
+            nivelActual
         }
     }
 
-    /** Reinicia solo los datos del día del usuario */
     fun resetDiario(context: Context, userId: Int) {
         val p = prefs(context, userId)
         p.edit {
@@ -128,7 +127,6 @@ object PreferenciasDiarias {
         }
     }
 
-    /**El reset total, solo puede ser usado por admin */
     fun resetTotal(context: Context, repo: UsuarioRepository, userId: Int) {
         val p = prefs(context, userId)
         val hoy = fechaActual()
@@ -138,9 +136,7 @@ object PreferenciasDiarias {
             putString("fecha_pasos", hoy)
             putInt("pasosHoy", 0)
         }
-
-        // Limpieza en base de datos
-        repo.borrarTareasUsuario(userId)
-        repo.actualizarNivelUsuario(userId, 0)
+        // repo.borrarTareasUsuario(userId)
+        // repo.actualizarNivelUsuario(userId, 0)
     }
 }

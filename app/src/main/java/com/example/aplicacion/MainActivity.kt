@@ -27,6 +27,9 @@ import com.example.aplicacion.data.*
 import com.example.aplicacion.ui.theme.*
 import com.example.aplicacion.pantallas.*
 
+// Se elimina la importación incorrecta de "VerUsuarios" del final de la lista
+// import com.example.aplicacion.pantallas.VerUsuarios
+
 class MainActivity : ComponentActivity() {
 
     // Launcher: permiso de notificaciones
@@ -108,7 +111,7 @@ class MainActivity : ComponentActivity() {
                     composable("register") {
                         RegisterScreen(navController)
                     }
-                    
+
                     composable(
                         route = "sesion_iniciada/{id}",
                         arguments = listOf(navArgument("id") { type = NavType.IntType })
@@ -136,6 +139,32 @@ class MainActivity : ComponentActivity() {
                     composable("sesion_iniciada_admin") {
                         AdminSesionIniciadaScreen(navController)
                     }
+
+                    // --- INICIO DE LAS RUTAS AÑADIDAS ---
+
+                    // 1. Ruta para la pantalla de ver todos los usuarios
+                    composable("ver_usuarios") {
+                        VerUsuarios(navController = navController)
+                    }
+
+                    // 2. Ruta para la pantalla de editar un usuario específico
+                    composable(
+                        route = "editar_usuario/{usuarioId}/{rol}",
+                        arguments = listOf(
+                            navArgument("usuarioId") { type = NavType.StringType },
+                            navArgument("rol") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val usuarioId = backStackEntry.arguments?.getString("usuarioId") ?: ""
+                        val rol = backStackEntry.arguments?.getString("rol") ?: ""
+                        EditarUsuarioScreen(
+                            navController = navController,
+                            usuarioId = usuarioId,
+                            rolUsuarioLogueado = rol
+                        )
+                    }
+
+                    // --- FIN DE LAS RUTAS AÑADIDAS ---
 
                     composable(
                         route = "mascota/{id}",
@@ -201,3 +230,4 @@ class MainActivity : ComponentActivity() {
         manager.notify(1, notification)
     }
 }
+

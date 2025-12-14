@@ -2,10 +2,11 @@ package com.example.aplicacion.pantallas
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,15 +20,16 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
-import com.example.aplicacion.data.remote.Usuario
+import com.example.aplicacion.data.SesionManager
 import com.example.aplicacion.viewmodel.VerUsuariosUiState
 import com.example.aplicacion.viewmodel.VerUsuariosViewModel
-
+import com.example.aplicacion.viewmodel.ViewModelFactory
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerUsuarios(
     navController: NavHostController,
-    viewModel: VerUsuariosViewModel = viewModel()
+    // Aquí le decimos que use la Factory para crear el ViewModel
+    viewModel: VerUsuariosViewModel = viewModel(factory = ViewModelFactory())
 ) {
     // Cargamos los usuarios en cuanto la pantalla es visible.
     LaunchedEffect(Unit) {
@@ -36,6 +38,10 @@ fun VerUsuarios(
 
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val sesionManager = remember { SesionManager(context) }
+    val sesionGuardada = sesionManager.obtenerSesion()
+    val rolActual = sesionGuardada?.split("/")?.get(0) ?: "usuario"
 
     Scaffold(
         topBar = {
@@ -70,6 +76,9 @@ fun VerUsuarios(
                                     onEliminar = {
                                         viewModel.eliminarUsuario(user.id)
                                         Toast.makeText(context, "Usuario ${user.nombre} eliminado", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onEditar = { usuarioId ->
+                                        navController.navigate("editar_usuario/$usuarioId/$rolActual")
                                     }
                                 )
                             }
@@ -85,7 +94,11 @@ fun VerUsuarios(
 }
 
 @Composable
-fun UsuarioItem(usuario: Usuario, onEliminar: () -> Unit) {
+fun UsuarioItem(
+    usuario: com.example.aplicacion.data.remote.Usuario, // Usamos el nuevo modelo de Usuario
+    onEliminar: () -> Unit,
+    onEditar: (Int) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFAE6D9)),
@@ -100,12 +113,26 @@ fun UsuarioItem(usuario: Usuario, onEliminar: () -> Unit) {
                 Text(usuario.nombre, color = Color(0xFFAA847B), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(usuario.correo, color = Color(0xFFA4A3A8), fontSize = 13.sp)
             }
-            IconButton(onClick = onEliminar) {
-                Image(
-                    painter = painterResource(id = R.drawable.btn_eliminar_user),
-                    contentDescription = "Eliminar usuario",
-                    modifier = Modifier.size(24.dp)
-                )
+
+            Row {
+                IconButton(onClick = { onEditar(usuario.id) }) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = "Editar usuario",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color(0xFF6D4C41)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                IconButton(onClick = onEliminar) {
+                    Image(
+                        painter = painterResource(id = R.drawable.btn_eliminar_user),
+                        contentDescription = "Eliminar usuario",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
     }

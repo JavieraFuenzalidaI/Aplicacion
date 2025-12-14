@@ -13,6 +13,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +28,10 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
+// --- INICIO DE LA CORRECCIÓN ---
+import com.example.aplicacion.data.UsuarioRepository
+import com.example.aplicacion.data.remote.RetrofitClient
+// --- FIN DE LA CORRECCIÓN ---
 import com.example.aplicacion.viewmodel.MascotaScreenData
 import com.example.aplicacion.viewmodel.MascotaUiState
 import com.example.aplicacion.viewmodel.PantallaMascotaViewModel
@@ -35,11 +41,19 @@ import com.example.aplicacion.viewmodel.PantallaMascotaViewModelFactory
 fun PantallaMascota(
     navController: NavHostController,
     usuarioId: Int,
-    esAdmin: Boolean = false,
-    viewModel: PantallaMascotaViewModel = viewModel(
-        factory = PantallaMascotaViewModelFactory(LocalContext.current.applicationContext as Application)
-    )
+    esAdmin: Boolean = false
 ) {
+    // --- INICIO DE LA CORRECCIÓN ---
+    // 1. Obtenemos el contexto de la aplicación.
+    val application = LocalContext.current.applicationContext as Application
+    // 2. Creamos una instancia del Repositorio que usa Retrofit.
+    val repository = remember { UsuarioRepository(RetrofitClient.instance) }
+    // 3. Creamos la Factory pasándole las dos dependencias que necesita.
+    val factory = PantallaMascotaViewModelFactory(application, repository)
+    // 4. Creamos el ViewModel usando la factory.
+    val viewModel: PantallaMascotaViewModel = viewModel(factory = factory)
+    // --- FIN DE LA CORRECCIÓN ---
+
     LaunchedEffect(usuarioId) {
         viewModel.cargarDatosMascota(usuarioId)
     }
@@ -93,12 +107,14 @@ private fun PantallaMascotaContent(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate("generar_tareas/${usuario.id}") },
-                containerColor = Color(0xFFDE9C7C),
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Filled.AutoAwesome, contentDescription = "Generar tareas con IA")
+            if (!esAdmin) { // El admin no debería generar tareas para un usuario específico desde aquí
+                FloatingActionButton(
+                    onClick = { navController.navigate("generar_tareas/${usuario.id}") },
+                    containerColor = Color(0xFFDE9C7C),
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = "Generar tareas con IA")
+                }
             }
         }
     ) { paddingValues ->
@@ -113,8 +129,12 @@ private fun PantallaMascotaContent(
 
             IconButton(
                 onClick = {
-                    if (esAdmin) navController.navigate("sesion_iniciada_admin") { popUpTo(0) }
-                    else navController.navigate("sesion_iniciada/${usuario.correo}") { popUpTo(0) }
+                    if (esAdmin) {
+                        navController.navigate("sesion_iniciada_admin") { popUpTo(0) }
+                    } else {
+                        // Navega a la sesión del usuario con su ID, no con su correo.
+                        navController.navigate("sesion_iniciada/${usuario.id}") { popUpTo(0) }
+                    }
                 },
                 modifier = Modifier.align(Alignment.TopStart).padding(30.dp).size(85.dp)
             ) {
@@ -136,13 +156,12 @@ private fun PantallaMascotaContent(
                                 .fillMaxWidth()
                                 .padding(vertical = 8.dp),
                             shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0x99FFFFFF)), // Fondo semitransparente
+                            colors = CardDefaults.cardColors(containerColor = Color(0x99FFFFFF)),
                         ) {
                             Text(
-                                // Usamos el valor de kilometros que viene en screenData
                                 text = String.format("Km recorridos hoy: %.2f", screenData.kilometros),
                                 fontSize = 16.sp,
-                                color = Color(0xFF755C48), // Un color que combine
+                                color = Color(0xFF755C48),
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                                     .align(Alignment.CenterHorizontally)
@@ -173,21 +192,23 @@ private fun PantallaMascotaContent(
                             }
                         }
 
-                        Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
+                        if (!esAdmin) {
+                            Divider(color = Color(0xFFDE9C7C), thickness = 1.dp)
 
-                        var nuevaTareaText by remember { mutableStateOf("") }
+                            var nuevaTareaText by remember { mutableStateOf("") }
 
-                        OutlinedTextField(value = nuevaTareaText, onValueChange = { nuevaTareaText = it }, placeholder = { Text("Añadir nueva tarea...") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                            OutlinedTextField(value = nuevaTareaText, onValueChange = { nuevaTareaText = it }, placeholder = { Text("Añadir nueva tarea...") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
 
-                        Button(
-                            onClick = {
-                                viewModel.agregarTarea(usuario.id, nuevaTareaText)
-                                nuevaTareaText = ""
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDE9C7C)),
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                        ) {
-                            Text("Agregar tarea", color = Color.White, fontSize = 13.sp)
+                            Button(
+                                onClick = {
+                                    viewModel.agregarTarea(usuario.id, nuevaTareaText)
+                                    nuevaTareaText = ""
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDE9C7C)),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                            ) {
+                                Text("Agregar tarea", color = Color.White, fontSize = 13.sp)
+                            }
                         }
                     }
                 }

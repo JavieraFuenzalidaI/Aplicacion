@@ -3,50 +3,44 @@ package com.example.aplicacion.data.remote
 import retrofit2.Response
 import retrofit2.http.*
 
-interface ApiService {
+// --- Data classes para las peticiones ---
 
-    // --- Endpoint de Login ---
+
+data class RegisterRequest(val nombre: String, val correo: String, val contrasena: String, val fecha: String)
+
+// Data classes para las actualizaciones de rol
+data class AdminUpdateUserData(val nombre: String, val correo: String, val fecha: String, val nivel: Int, val rol: String, val contrasena: String?)
+data class ModeratorUpdateUserData(val nombre: String, val fecha: String)
+
+
+// --- Definición de la Interfaz ---
+
+interface ApiService {
 
     @POST("login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    // --- Endpoints de Usuarios ---
+    @POST("usuarios")
+    suspend fun createUsuario(@Body request: RegisterRequest): Response<Usuario>
 
     @GET("usuarios")
     suspend fun getUsuarios(): Response<List<Usuario>>
 
     @GET("usuarios/{id}")
-    suspend fun getUsuario(@Path("id") id: Int): Response<Usuario>
-
-    @GET("usuarios/email/{correo}")
-    suspend fun getUsuarioPorCorreo(@Path("correo") correo: String): Response<Usuario>
-
-    @POST("usuarios")
-    suspend fun createUsuario(@Body usuario: Usuario): Response<Usuario>
-
-    @PUT("usuarios/{id}")
-    suspend fun updateUsuario(@Path("id") id: Int, @Body usuario: Usuario): Response<Usuario>
+    suspend fun getUsuario(@Path("id") id: String): Response<Usuario>
 
     @DELETE("usuarios/{id}")
     suspend fun deleteUsuario(@Path("id") id: Int): Response<Unit>
 
-    // --- Endpoints de Tareas ---
+    @PATCH("usuarios/admin/{id}")
+    suspend fun actualizarUsuarioAdmin(
+        @Path("id") id: String,
+        @Body datosUsuario: AdminUpdateUserData
+    ): Response<Usuario>
 
-    @GET("tareas")
-    suspend fun getTareas(): Response<List<Tarea>>
-
-    @GET("tareas/usuario/{usuario_id}")
-    suspend fun getTareasPorUsuario(@Path("usuario_id") usuarioId: Int): Response<List<Tarea>>
-
-    @GET("tareas/{id}")
-    suspend fun getTarea(@Path("id") id: Int): Response<Tarea>
-
-    @POST("tareas")
-    suspend fun createTarea(@Body tarea: Tarea): Response<Tarea>
-
-    @PUT("tareas/{id}")
-    suspend fun updateTarea(@Path("id") id: Int, @Body tarea: Tarea): Response<Tarea>
-
-    @DELETE("tareas/{id}")
-    suspend fun deleteTarea(@Path("id") id: Int): Response<Unit>
+    @PATCH("usuarios/moderador/{id}")
+    suspend fun actualizarUsuarioModerador(
+        @Path("id") id: String,
+        @Body datosUsuario: ModeratorUpdateUserData
+    ): Response<Usuario>
 }

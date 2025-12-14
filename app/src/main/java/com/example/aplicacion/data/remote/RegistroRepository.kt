@@ -7,15 +7,15 @@ import kotlinx.coroutines.withContext
 
 class RegistroRepository(private val dispatcher: CoroutineDispatcher = Dispatchers.IO) {
 
-    suspend fun registrarUsuario(nuevoUsuario: Usuario): RegistroUiState {
+    suspend fun registrarUsuario(request: RegisterRequest): RegistroUiState {
         return withContext(dispatcher) {
             try {
-                val response = RetrofitClient.instance.createUsuario(nuevoUsuario)
+                val response = RetrofitClient.instance.createUsuario(request)
 
                 if (response.isSuccessful && response.body() != null) {
                     RegistroUiState.Success(response.body()!!)
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: "Error al registrar."
+                    val errorMsg = response.errorBody()?.string() ?: "Error desconocido al registrar."
                     RegistroUiState.Error(errorMsg)
                 }
             } catch (e: Exception) {

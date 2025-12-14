@@ -29,8 +29,7 @@ class SesionIniciadaViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                // Llamamos al endpoint que busca por ID
-                val response = RetrofitClient.instance.getUsuario(id)
+                val response = RetrofitClient.instance.getUsuario(id.toString())
                 if (response.isSuccessful) {
                     _usuario.value = response.body()
                 } else {
