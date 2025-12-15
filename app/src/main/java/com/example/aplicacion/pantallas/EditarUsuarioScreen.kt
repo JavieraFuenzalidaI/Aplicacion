@@ -1,80 +1,229 @@
 package com.example.aplicacion.pantallas
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.navigation.NavHostController
-import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import com.example.aplicacion.R
+import com.example.aplicacion.data.remote.AdminUpdateUserData
+import com.example.aplicacion.data.remote.ModeratorUpdateUserData
+import com.example.aplicacion.viewmodel.ViewModelFactory
+import com.example.aplicacion.viewmodel.EditarUsuarioUiState
+import com.example.aplicacion.viewmodel.VerUsuariosViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditarUsuarioScreen(
     navController: NavHostController,
-    usuarioId: String, // ID del usuario a editar
-    rolUsuarioLogueado: String // Rol del usuario actual ("admin" o "moderador")
+    usuarioId: String,
+    rolUsuarioLogueado: String,
+    viewModel: VerUsuariosViewModel = viewModel(factory = ViewModelFactory())
 ) {
-    // 1. Estados para los campos del formulario
+    val context = LocalContext.current
+    val editState by viewModel.editUiState.collectAsState()
+
     var nombre by remember { mutableStateOf("") }
     var correo by remember { mutableStateOf("") }
     var fecha by remember { mutableStateOf("") }
     var contrasena by remember { mutableStateOf("") }
-    // ... otros campos como 'rol' y 'nivel' si el admin puede cambiarlos
+    var rol by remember { mutableStateOf("") }
+    var nivel by remember { mutableStateOf(0) }
 
-    // 2. Lógica para cargar los datos del usuario a editar (usando un ViewModel y Retrofit)
-    // LaunchedEffect(usuarioId) { /* Cargar datos del usuario con GET /usuarios/{usuarioId} */ }
+    var expanded by remember { mutableStateOf(false) }
+    val rolesDisponibles = listOf("usuario", "moderador", "admin")
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Text("Editando Usuario ID: $usuarioId")
+    LaunchedEffect(key1 = usuarioId) {
+        viewModel.cargarUsuarioParaEditar(usuarioId)
+    }
 
-        // Campo Nombre (editable por ambos)
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre de usuario") },
-            enabled = true // Siempre habilitado
-        )
-
-        // Campo contrasenia
-        OutlinedTextField(
-            value = contrasena,
-            onValueChange = { contrasena = it },
-            label = { Text("Contraseña") },
-            enabled = (rolUsuarioLogueado == "admin") // Habilitado solo si es admin
-        )
-
-        // Campo Correo (editable solo por admin)
-        OutlinedTextField(
-            value = correo,
-            onValueChange = { correo = it },
-            label = { Text("Correo Electrónico") },
-            enabled = (rolUsuarioLogueado == "admin") // Habilitado solo si es admin
-        )
-
-        // Campo Fecha (editable por ambos)
-        OutlinedTextField(
-            value = fecha,
-            onValueChange = { fecha = it },
-            label = { Text("Fecha de Nacimiento") },
-            enabled = true // Siempre habilitado
-        )
-
-        // ... otros campos que solo el admin puede editar ...
-
-        Button(onClick = {
-            // 3. Lógica para guardar los cambios
-            if (rolUsuarioLogueado == "admin") {
-                // Llamar al endpoint PATCH /usuarios/admin/{id}
-                // viewModel.actualizarUsuarioAdmin(usuarioId, nombre, correo, fecha, ...)
-            } else if (rolUsuarioLogueado == "moderador") {
-                // Llamar al endpoint PATCH /usuarios/moderador/{id}
-                // viewModel.actualizarUsuarioModerador(usuarioId, nombre, fecha)
+    LaunchedEffect(key1 = editState) {
+        when (val state = editState) {
+            is EditarUsuarioUiState.Success -> {
+                val usuario = state.usuario
+                nombre = usuario.nombre
+                correo = usuario.correo
+                fecha = usuario.fecha
+                rol = usuario.rol
+                nivel = usuario.nivel
             }
-        }) {
-            Text("Guardar Cambios")
+            is EditarUsuarioUiState.UpdateSuccess -> {
+                Toast.makeText(context, "Usuario actualizado correctamente", Toast.LENGTH_SHORT).show()
+                viewModel.resetEditState()
+                navController.popBackStack()
+            }
+            is EditarUsuarioUiState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+            }
+            else -> Unit
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Editar Usuario", color = Color.White) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFAA847B)),
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.btn_regreso_icon),
+                            contentDescription = "Volver",
+                            tint = Color.White
+                        )
+                    }
+                }
+            )
+        },
+        containerColor = Color(0xFFFFF3E0)
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Editando Perfil",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF6D4C41)
+                )
+                Text(
+                    text = "ID de Usuario: $usuarioId",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // form de edición
+
+                // Campo Nombre
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre de usuario") },
+                    enabled = (rolUsuarioLogueado == "admin" || rolUsuarioLogueado == "moderador"),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Campo Fecha
+                OutlinedTextField(
+                    value = fecha,
+                    onValueChange = { fecha = it },
+                    label = { Text("Fecha de Nacimiento") },
+                    enabled = (rolUsuarioLogueado == "admin" || rolUsuarioLogueado == "moderador"),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // --- CAMPOS SOLO PARA ADMIN ---
+
+                // Campo Correo
+                OutlinedTextField(
+                    value = correo,
+                    onValueChange = { correo = it },
+                    label = { Text("Correo Electrónico") },
+                    enabled = (rolUsuarioLogueado == "admin"),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Campo Contraseña
+                OutlinedTextField(
+                    value = contrasena,
+                    onValueChange = { contrasena = it }, // <-- ¡SOLO ERA ESTO!
+                    label = { Text("Nueva Contraseña") },
+                    placeholder = { Text("Dejar en blanco para no cambiar") },
+                    enabled = (rolUsuarioLogueado == "admin"),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Selector de Rol (solo para admin)
+                if (rolUsuarioLogueado == "admin") {
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = !expanded },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
+                            readOnly = true,
+                            value = rol,
+                            onValueChange = {},
+                            label = { Text("Rol del usuario") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                        ) {
+                            rolesDisponibles.forEach { selectionOption ->
+                                DropdownMenuItem(
+                                    text = { Text(selectionOption) },
+                                    onClick = {
+                                        rol = selectionOption
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Botón de Guardar
+                Button(
+                    onClick = {
+                        if (rolUsuarioLogueado == "admin") {
+                            val data = AdminUpdateUserData(
+                                nombre,
+                                correo,
+                                fecha,
+                                nivel,
+                                rol,
+                                if (contrasena.isBlank()) null else contrasena
+                            )
+                            viewModel.guardarCambiosAdmin(usuarioId, data)
+                        } else if (rolUsuarioLogueado == "moderador") {
+                            val data = ModeratorUpdateUserData(nombre, fecha)
+                            viewModel.guardarCambiosModerador(usuarioId, data)
+                        }
+                    },
+                    enabled = editState !is EditarUsuarioUiState.Loading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6D4C41))
+                ) {
+                    Text("Guardar Cambios", color = Color.White)
+                }
+            }
+
+            // Muestra un indicador de carga si está cargando o guardando
+            if (editState is EditarUsuarioUiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
         }
     }
 }
