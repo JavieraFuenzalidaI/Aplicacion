@@ -9,5 +9,6 @@ data class Usuario(
     @SerializedName("contrasena") val contrasena: String,
     @SerializedName("fecha") val fecha: String,
     @SerializedName("nivel") val nivel: Int,
-    @SerializedName("rol") val rol: String
+    @SerializedName("rol") val rol: String,
+    @SerializedName("racha") val racha: Int? = 0 // Campo añadido para la racha
 )

@@ -8,7 +8,9 @@ data class RegisterRequest(val nombre: String, val correo: String, val contrasen
 data class AdminUpdateUserData(val nombre: String, val correo: String, val fecha: String, val nivel: Int, val rol: String, val contrasena: String?)
 data class ModeratorUpdateUserData(val nombre: String, val fecha: String)
 
-
+data class CreateTareaRequest(val usuario_id: Int, val descripcion: String, val puntos: Int)
+data class UpdateTareaRequest(val completado: Int)
+// Se elimina UpdateNivelRequest porque ya no se usa
 
 interface ApiService {
 
@@ -38,4 +40,15 @@ interface ApiService {
         @Path("id") id: String,
         @Body datosUsuario: ModeratorUpdateUserData
     ): Response<Usuario>
+
+    @GET("tareas/usuario/{id}")
+    suspend fun getTareasUsuario(@Path("id") id: Int): Response<List<Tarea>>
+
+    @POST("tareas")
+    suspend fun createTarea(@Body tarea: CreateTareaRequest): Response<Tarea>
+
+    @PATCH("tareas/{id}")
+    suspend fun updateTarea(@Path("id") id: Int, @Body request: UpdateTareaRequest): Response<Tarea>
+
+
 }

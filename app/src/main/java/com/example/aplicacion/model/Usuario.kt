@@ -11,5 +11,6 @@ data class Usuario(
     val correo: String,
     val contrasena: String,
     val nivelMascota: Int = 0,
-    val rol: String
+    val rol: String,
+    val racha: Int = 0
 )

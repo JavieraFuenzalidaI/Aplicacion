@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacion.data.UsuarioRepository
+import com.example.aplicacion.data.remote.CreateTareaRequest
 import com.example.aplicacion.data.remote.Tarea
+import com.example.aplicacion.data.remote.UpdateTareaRequest
 import com.example.aplicacion.data.remote.Usuario
 import com.example.aplicacion.util.StepCounter
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -67,7 +69,7 @@ class PantallaMascotaViewModel(private val repository: UsuarioRepository) : View
             _uiState.value = MascotaUiState.Loading
             try {
                 val usuario = repository.obtenerUsuarioPorId(usuarioId.toString())
-                val tareas = emptyList<Tarea>()
+                val tareas = repository.getTareasUsuario(usuarioId)
                 val screenData = MascotaScreenData(usuario, tareas)
                 _uiState.value = MascotaUiState.Success(screenData)
             } catch (e: Exception) {
@@ -77,12 +79,32 @@ class PantallaMascotaViewModel(private val repository: UsuarioRepository) : View
     }
 
     fun agregarTarea(usuarioId: Int, descripcion: String) {
-        // Lógica futura
+        if (descripcion.isBlank()) return
+
+        viewModelScope.launch {
+            try {
+                val request = CreateTareaRequest(usuarioId, descripcion, 15)
+                repository.createTarea(request)
+                cargarDatosMascota(usuarioId)
+            } catch (e: Exception) {
+                _uiState.value = MascotaUiState.Error("Error al crear la tarea: ${e.message}")
+            }
+        }
     }
 
-    fun completarTarea(tarea: Tarea, nuevoNivel: Int) {
-        // Lógica futura
+
+    fun completarTarea(tarea: Tarea) {
+        viewModelScope.launch {
+            try {
+                val updateRequest = UpdateTareaRequest(completado = 1)
+                repository.updateTarea(tarea.id, updateRequest)
+                cargarDatosMascota(tarea.usuarioId)
+            } catch (e: Exception) {
+                _uiState.value = MascotaUiState.Error("Error al completar la tarea: ${e.message}")
+            }
+        }
     }
+
 }
 
 class PantallaMascotaViewModelFactory(

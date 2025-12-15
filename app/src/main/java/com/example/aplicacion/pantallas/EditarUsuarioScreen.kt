@@ -47,7 +47,7 @@ fun EditarUsuarioScreen(
     var nivel by remember { mutableStateOf(0) }
 
     var expanded by remember { mutableStateOf(false) }
-    val rolesDisponibles = listOf("usuario", "moderador", "admin")
+    val rolesDisponibles = listOf("usuario", "moderador", "admin", "superuser")
 
     LaunchedEffect(key1 = usuarioId) {
         viewModel.cargarUsuarioParaEditar(usuarioId)

@@ -25,26 +25,39 @@ class GenerarTareasViewModel : ViewModel() {
     fun generarTareas(promptUsuario: String, idUsuario: Int) {
         viewModelScope.launch {
             _uiState.value = GenerarTareasUiState.Loading
+
             val promptCompleto = """
-                Eres un asistente de productividad para la app TaskiPet. 
-                El usuario quiere que le ayudes con la siguiente tarea: '$promptUsuario'.
-                Genera una lista de 3 a 5 subtareas en formato JSON.
-                Cada tarea en el JSON debe tener los campos 'usuario_id' (int), 'descripcion' (string), 'puntos' (int) con valor 10 o 20 y 'completado' (int) en 0.
-                La respuesta debe ser únicamente el JSON, sin ningún texto adicional.
+                Eres un asistente de productividad para la app TaskiPet.
+                Basado en la siguiente petición del usuario: '$promptUsuario'.
+                Genera una lista de 3 a 5 subtareas.
+                La respuesta DEBE SER EXCLUSIVAMENTE un array JSON.
+                Cada objeto en el array debe tener los siguientes campos: 'descripcion' (string) y 'puntos' (un entero, que sea 10 o 20).
+                No incluyas nada más en tu respuesta, solo el array JSON. No uses markdown (```json ... ```).
             """
 
             try {
                 val response = GeminiClient.generativeModel.generateContent(promptCompleto)
                 val responseText = response.text
+
                 if (responseText != null) {
-                    val tareasGeneradas = parseTareasFromJson(responseText, idUsuario)
-                    _uiState.value = GenerarTareasUiState.Success(tareasGeneradas)
+                    val cleanedJson = responseText
+                        .replace("```json", "")
+                        .replace("```", "")
+                        .trim()
+
+                    val tareasGeneradas = parseTareasFromJson(cleanedJson, idUsuario)
+                    if (tareasGeneradas.isNotEmpty()) {
+                        _uiState.value = GenerarTareasUiState.Success(tareasGeneradas)
+                    } else {
+                        _uiState.value = GenerarTareasUiState.Error("La IA no devolvió tareas válidas. Prueba a ser más específico.")
+                    }
                 } else {
                     _uiState.value = GenerarTareasUiState.Error("La IA no devolvió una respuesta.")
                 }
 
             } catch (e: Exception) {
-                _uiState.value = GenerarTareasUiState.Error("Error al contactar con la IA: ${e.message}")
+                e.printStackTrace()
+                _uiState.value = GenerarTareasUiState.Error("Error al conectar con la IA: ${e.message}")
             }
         }
     }
@@ -65,15 +78,14 @@ class GenerarTareasViewModel : ViewModel() {
                 )
             }
         } catch (e: Exception) {
-            println("Error al parsear el JSON: ${e.message}")
+            println("Error al parsear el JSON de la IA: ${e.message}")
             emptyList()
         }
     }
 
     private data class TareaJson(
         val descripcion: String,
-        val puntos: Int,
-        val usuario_id: Int
+        val puntos: Int
     )
 
     fun resetState() {

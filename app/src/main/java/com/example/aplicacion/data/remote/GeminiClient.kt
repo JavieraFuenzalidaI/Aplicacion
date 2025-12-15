@@ -5,17 +5,15 @@ import com.google.ai.client.generativeai.type.generationConfig
 
 object GeminiClient {
 
-    private const val API_KEY = "ApiKey"
+    private const val API_KEY = "AIzaSyDS6F6WEoyaTkRYfYxQeaJD_vrFxny5kKg"
 
-    // Configuración del modelo
     private val config = generationConfig {
-        temperature = 0.7f 
+        temperature = 0.7f
     }
 
-    // Inicialización del modelo de IA (CORREGIDO)
     val generativeModel: GenerativeModel by lazy {
         GenerativeModel(
-            modelName = "gemini-2.0-flash-lite",
+            modelName = "gemini-pro",
             apiKey = API_KEY,
             generationConfig = config
         )

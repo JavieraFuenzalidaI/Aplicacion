@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,13 +45,9 @@ fun PantallaMascota(
     val application = LocalContext.current.applicationContext as Application
     val context = LocalContext.current
 
-    // Obtenemos la instancia de ApiService usando el nuevo método getInstance(context)
     val apiService = RetrofitClient.getInstance(context).instance
-    // Creamos el Repositorio con esa instancia de ApiService
     val repository = remember { UsuarioRepository(apiService) }
-    // Creamos la Factory pasándole las dependencias
     val factory = PantallaMascotaViewModelFactory(application, repository)
-    // Creamos el ViewModel usando la factory
     val viewModel: PantallaMascotaViewModel = viewModel(factory = factory)
 
     LaunchedEffect(usuarioId) {
@@ -106,9 +103,9 @@ private fun PantallaMascotaContent(
 
     Scaffold(
         floatingActionButton = {
-            if (!esAdmin) {
+            if (usuario.rol == "superuser") {
                 FloatingActionButton(
-                    onClick = { navController.navigate("generar_tareas/${usuario.id}") },
+                    onClick = { },
                     containerColor = Color(0xFFDE9C7C),
                     contentColor = Color.White
                 ) {
@@ -139,8 +136,17 @@ private fun PantallaMascotaContent(
                 Image(painter = painterResource(id = R.drawable.btn_regreso_icon), contentDescription = "Volver")
             }
 
-            IconButton(onClick = { menuExpandido = !menuExpandido }, modifier = Modifier.align(Alignment.TopEnd).padding(30.dp).size(85.dp).zIndex(2f)) {
-                Image(painter = painterResource(id = R.drawable.tareas_icon), contentDescription = "Tareas")
+            Row(
+                modifier = Modifier.align(Alignment.TopEnd).padding(30.dp).zIndex(2f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (usuario.rol == "superuser" && (usuario.racha ?: 0) > 0) {
+                    Text("${usuario.racha} 🔥", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                IconButton(onClick = { menuExpandido = !menuExpandido }, modifier = Modifier.size(85.dp)) {
+                    Image(painter = painterResource(id = R.drawable.tareas_icon), contentDescription = "Tareas")
+                }
             }
 
             AnimatedVisibility(visible = menuExpandido, modifier = Modifier.align(Alignment.TopEnd).padding(end = 20.dp, top = 130.dp).zIndex(1f)) {
@@ -174,10 +180,11 @@ private fun PantallaMascotaContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 6.dp)
+
                                         .clickable(enabled = !isChecked) {
-                                            val nuevoNivel = (usuario.nivel + tarea.puntos).coerceAtMost(100)
-                                            viewModel.completarTarea(tarea, nuevoNivel)
+                                            viewModel.completarTarea(tarea)
                                         }
+
                                 ) {
                                     Checkbox(checked = isChecked, onCheckedChange = null, enabled = !isChecked)
                                     Text(
