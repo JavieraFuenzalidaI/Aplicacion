@@ -1,5 +1,6 @@
 package com.example.aplicacion.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacion.data.remote.RegisterRequest
@@ -26,18 +27,11 @@ class RegistroViewModel(
     private val _uiState = MutableStateFlow<RegistroUiState>(RegistroUiState.Idle)
     val uiState: StateFlow<RegistroUiState> = _uiState
 
-    fun registrarUsuario(nombre: String, correo: String, contrasena: String, fecha: String) {
+    fun registrarUsuario(nombre: String, correo: String, contrasena: String, fecha: String, context: Context) {
         viewModelScope.launch(dispatcher) {
             _uiState.value = RegistroUiState.Loading
-
-            val request = RegisterRequest(
-                nombre = nombre,
-                correo = correo,
-                contrasena = contrasena,
-                fecha = fecha
-            )
-
-            _uiState.value = repository.registrarUsuario(request)
+            val request = RegisterRequest(nombre, correo, contrasena, fecha)
+            _uiState.value = repository.registrarUsuario(request, context)
         }
     }
 

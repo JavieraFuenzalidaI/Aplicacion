@@ -21,27 +21,33 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
 import com.example.aplicacion.data.SesionManager
+// --- INICIO DE LA CORRECCIÓN ---
+// Importamos el modelo de datos correcto para el usuario
+import com.example.aplicacion.data.remote.Usuario
+// --- FIN DE LA CORRECCIÓN ---
 import com.example.aplicacion.viewmodel.VerUsuariosUiState
 import com.example.aplicacion.viewmodel.VerUsuariosViewModel
 import com.example.aplicacion.viewmodel.ViewModelFactory
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VerUsuarios(
     navController: NavHostController,
-    // Aquí le decimos que use la Factory para crear el ViewModel
-    viewModel: VerUsuariosViewModel = viewModel(factory = ViewModelFactory())
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Pasamos el contexto a la ViewModelFactory
+    viewModel: VerUsuariosViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
+    // --- FIN DE LA CORRECCIÓN ---
 ) {
-    // Cargamos los usuarios en cuanto la pantalla es visible.
+    val context = LocalContext.current
+    val sesionManager = remember { SesionManager(context) }
+    val sesionGuardada = sesionManager.obtenerSesion()
+    val rolActual = sesionGuardada?.split("/")?.get(0) ?: "usuario"
+
     LaunchedEffect(Unit) {
         viewModel.cargarUsuarios()
     }
 
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-
-    val sesionManager = remember { SesionManager(context) }
-    val sesionGuardada = sesionManager.obtenerSesion()
-    val rolActual = sesionGuardada?.split("/")?.get(0) ?: "usuario"
 
     Scaffold(
         topBar = {
@@ -93,19 +99,25 @@ fun VerUsuarios(
     }
 }
 
+// --- INICIO DE LA CORRECCIÓN ---
+// Añadimos el Composable 'UsuarioItem' que faltaba en este archivo
 @Composable
-fun UsuarioItem(
-    usuario: com.example.aplicacion.data.remote.Usuario, // Usamos el nuevo modelo de Usuario
+private fun UsuarioItem(
+    usuario: Usuario,
     onEliminar: () -> Unit,
     onEditar: (Int) -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFFAE6D9)),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -137,3 +149,4 @@ fun UsuarioItem(
         }
     }
 }
+// --- FIN DE LA CORRECCIÓN ---

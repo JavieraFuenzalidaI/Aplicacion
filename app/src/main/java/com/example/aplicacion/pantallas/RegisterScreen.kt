@@ -10,6 +10,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -37,14 +39,12 @@ fun RegisterScreen(navController: NavHostController) {
     val viewModel: RegistroViewModel = viewModel()
     val registerState by viewModel.uiState.collectAsState()
 
-    // Efecto para reaccionar a los cambios de estado del ViewModel
     LaunchedEffect(registerState) {
         when (val state = registerState) {
             is RegistroUiState.Success -> {
                 Toast.makeText(context, "¡Usuario registrado correctamente!", Toast.LENGTH_SHORT).show()
-                // Navegamos al login y limpiamos la pila de navegación
                 navController.navigate("login") { popUpTo(navController.graph.startDestinationId) { inclusive = true } }
-                viewModel.resetState() // Reseteamos el estado
+                viewModel.resetState()
             }
             is RegistroUiState.Error -> {
                 Toast.makeText(context, "Error: ${state.message}", Toast.LENGTH_LONG).show()
@@ -61,7 +61,6 @@ fun RegisterScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
         if (registerState is RegistroUiState.Loading) {
             CircularProgressIndicator()
         } else {
@@ -103,7 +102,6 @@ private fun RegisterForm(navController: NavHostController, viewModel: RegistroVi
         Image(painter = painterResource(id = R.drawable.img_crear_cuenta), contentDescription = "Texto crear cuenta")
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Campos del formulario...
         OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Nombre de usuario") }, isError = usernameError.isNotEmpty(), modifier = Modifier.fillMaxWidth())
         if (usernameError.isNotEmpty()) Text(usernameError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(12.dp))
@@ -116,7 +114,6 @@ private fun RegisterForm(navController: NavHostController, viewModel: RegistroVi
         if (passwordError.isNotEmpty()) Text(passwordError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Selector de fecha
         val calendar = Calendar.getInstance()
         val datePickerDialog = DatePickerDialog(context, { _, y, m, d -> birthday = "$d/${m + 1}/$y" }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
 
@@ -131,7 +128,7 @@ private fun RegisterForm(navController: NavHostController, viewModel: RegistroVi
         Button(
             onClick = {
                 if (validateFields()) {
-                    viewModel.registrarUsuario(username, email, password, birthday)
+                    viewModel.registrarUsuario(username, email, password, birthday, context)
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF0DCD8)),

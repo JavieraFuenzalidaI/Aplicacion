@@ -1,13 +1,16 @@
 package com.example.aplicacion.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aplicacion.data.remote.LoginRequest
 import com.example.aplicacion.data.remote.LoginResponse
 import com.example.aplicacion.data.remote.RetrofitClient
+import com.example.aplicacion.data.remote.handleApiResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.lang.Exception
 
 sealed interface LoginUiState {
     object Idle : LoginUiState
@@ -19,34 +22,22 @@ sealed interface LoginUiState {
 class LoginViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
-
     val uiState: StateFlow<LoginUiState> = _uiState
 
-
-    fun iniciarSesion(correo: String, contrasena: String) {
-
+    fun iniciarSesion(correo: String, contrasena: String, context: Context) {
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
-
             try {
                 val request = LoginRequest(correo, contrasena)
-                val response = RetrofitClient.instance.login(request)
-                if (response.isSuccessful && response.body() != null) {
-                    _uiState.value = LoginUiState.Success(response.body()!!)
-                } else {
-                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
-                    _uiState.value = LoginUiState.Error(errorBody)
-                }
-
+                val response = RetrofitClient.getInstance(context).instance.login(request)
+                _uiState.value = LoginUiState.Success(handleApiResponse(response))
             } catch (e: Exception) {
-                // Error de red (ej. sin conexión): Actualizar la UI con el mensaje de error
-                _uiState.value = LoginUiState.Error("Error de conexión: ${e.message}")
+                _uiState.value = LoginUiState.Error("Error: ${e.message}")
             }
         }
     }
-    
-    // Función para resetear el estado si el usuario quiere reintentar
-    fun resetState(){
+
+    fun resetState() {
         _uiState.value = LoginUiState.Idle
     }
 }

@@ -28,10 +28,8 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
-// --- INICIO DE LA CORRECCIÓN ---
 import com.example.aplicacion.data.UsuarioRepository
 import com.example.aplicacion.data.remote.RetrofitClient
-// --- FIN DE LA CORRECCIÓN ---
 import com.example.aplicacion.viewmodel.MascotaScreenData
 import com.example.aplicacion.viewmodel.MascotaUiState
 import com.example.aplicacion.viewmodel.PantallaMascotaViewModel
@@ -43,16 +41,17 @@ fun PantallaMascota(
     usuarioId: Int,
     esAdmin: Boolean = false
 ) {
-    // --- INICIO DE LA CORRECCIÓN ---
-    // 1. Obtenemos el contexto de la aplicación.
     val application = LocalContext.current.applicationContext as Application
-    // 2. Creamos una instancia del Repositorio que usa Retrofit.
-    val repository = remember { UsuarioRepository(RetrofitClient.instance) }
-    // 3. Creamos la Factory pasándole las dos dependencias que necesita.
+    val context = LocalContext.current
+
+    // Obtenemos la instancia de ApiService usando el nuevo método getInstance(context)
+    val apiService = RetrofitClient.getInstance(context).instance
+    // Creamos el Repositorio con esa instancia de ApiService
+    val repository = remember { UsuarioRepository(apiService) }
+    // Creamos la Factory pasándole las dependencias
     val factory = PantallaMascotaViewModelFactory(application, repository)
-    // 4. Creamos el ViewModel usando la factory.
+    // Creamos el ViewModel usando la factory
     val viewModel: PantallaMascotaViewModel = viewModel(factory = factory)
-    // --- FIN DE LA CORRECCIÓN ---
 
     LaunchedEffect(usuarioId) {
         viewModel.cargarDatosMascota(usuarioId)
@@ -107,7 +106,7 @@ private fun PantallaMascotaContent(
 
     Scaffold(
         floatingActionButton = {
-            if (!esAdmin) { // El admin no debería generar tareas para un usuario específico desde aquí
+            if (!esAdmin) {
                 FloatingActionButton(
                     onClick = { navController.navigate("generar_tareas/${usuario.id}") },
                     containerColor = Color(0xFFDE9C7C),
@@ -132,7 +131,6 @@ private fun PantallaMascotaContent(
                     if (esAdmin) {
                         navController.navigate("sesion_iniciada_admin") { popUpTo(0) }
                     } else {
-                        // Navega a la sesión del usuario con su ID, no con su correo.
                         navController.navigate("sesion_iniciada/${usuario.id}") { popUpTo(0) }
                     }
                 },

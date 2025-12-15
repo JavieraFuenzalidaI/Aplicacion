@@ -3,17 +3,12 @@ package com.example.aplicacion.data.remote
 import retrofit2.Response
 import retrofit2.http.*
 
-// --- Data classes para las peticiones ---
-
-
 data class RegisterRequest(val nombre: String, val correo: String, val contrasena: String, val fecha: String)
 
-// Data classes para las actualizaciones de rol
 data class AdminUpdateUserData(val nombre: String, val correo: String, val fecha: String, val nivel: Int, val rol: String, val contrasena: String?)
 data class ModeratorUpdateUserData(val nombre: String, val fecha: String)
 
 
-// --- Definición de la Interfaz ---
 
 interface ApiService {
 

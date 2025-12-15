@@ -19,7 +19,7 @@ La aplicación permite la gestión de usuarios, incluyendo:
 
 La aplicación se comunica con un backend propio a través de los siguientes endpoints:
 
-*   **URL Base:** `http://3.84.192.34:3000/`
+*   **URL Base:** `http://44.202.116.144:3000/`
 
 *   **Endpoints específicos:**
     *   `POST /login`

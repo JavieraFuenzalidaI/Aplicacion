@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                         val id = sesionGuardada.substringAfter("/").toIntOrNull() ?: sesionGuardada.toIntOrNull() ?: 0
                         "sesion_iniciada/$id"
                     }
-                    else -> "login"
+                    else -> "home"
                 }
 
                 NavHost(
@@ -106,6 +106,9 @@ class MainActivity : ComponentActivity() {
 
                     composable("login") {
                         LoginScreen(navController)
+                    }
+                    composable("home"){
+                        HomeScreen(navController)
                     }
 
                     composable("register") {

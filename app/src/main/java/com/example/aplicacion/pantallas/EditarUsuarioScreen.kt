@@ -21,9 +21,9 @@ import androidx.navigation.NavHostController
 import com.example.aplicacion.R
 import com.example.aplicacion.data.remote.AdminUpdateUserData
 import com.example.aplicacion.data.remote.ModeratorUpdateUserData
-import com.example.aplicacion.viewmodel.ViewModelFactory
 import com.example.aplicacion.viewmodel.EditarUsuarioUiState
 import com.example.aplicacion.viewmodel.VerUsuariosViewModel
+import com.example.aplicacion.viewmodel.ViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +31,10 @@ fun EditarUsuarioScreen(
     navController: NavHostController,
     usuarioId: String,
     rolUsuarioLogueado: String,
-    viewModel: VerUsuariosViewModel = viewModel(factory = ViewModelFactory())
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Le pasamos el contexto real a la fábrica para que pueda crear el ViewModel.
+    viewModel: VerUsuariosViewModel = viewModel(factory = ViewModelFactory(LocalContext.current))
+    // --- FIN DE LA CORRECCIÓN ---
 ) {
     val context = LocalContext.current
     val editState by viewModel.editUiState.collectAsState()
@@ -99,22 +102,10 @@ fun EditarUsuarioScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Editando Perfil",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6D4C41)
-                )
-                Text(
-                    text = "ID de Usuario: $usuarioId",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
+                Text("Editando Perfil", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6D4C41))
+                Text("ID de Usuario: $usuarioId", fontSize = 14.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // form de edición
-
-                // Campo Nombre
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
@@ -124,7 +115,6 @@ fun EditarUsuarioScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo Fecha
                 OutlinedTextField(
                     value = fecha,
                     onValueChange = { fecha = it },
@@ -134,9 +124,6 @@ fun EditarUsuarioScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- CAMPOS SOLO PARA ADMIN ---
-
-                // Campo Correo
                 OutlinedTextField(
                     value = correo,
                     onValueChange = { correo = it },
@@ -146,10 +133,9 @@ fun EditarUsuarioScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Campo Contraseña
                 OutlinedTextField(
                     value = contrasena,
-                    onValueChange = { contrasena = it }, // <-- ¡SOLO ERA ESTO!
+                    onValueChange = { contrasena = it },
                     label = { Text("Nueva Contraseña") },
                     placeholder = { Text("Dejar en blanco para no cambiar") },
                     enabled = (rolUsuarioLogueado == "admin"),
@@ -157,7 +143,6 @@ fun EditarUsuarioScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Selector de Rol (solo para admin)
                 if (rolUsuarioLogueado == "admin") {
                     ExposedDropdownMenuBox(
                         expanded = expanded,
@@ -165,9 +150,7 @@ fun EditarUsuarioScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         OutlinedTextField(
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth(),
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
                             readOnly = true,
                             value = rol,
                             onValueChange = {},
@@ -192,18 +175,10 @@ fun EditarUsuarioScreen(
                 }
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Botón de Guardar
                 Button(
                     onClick = {
                         if (rolUsuarioLogueado == "admin") {
-                            val data = AdminUpdateUserData(
-                                nombre,
-                                correo,
-                                fecha,
-                                nivel,
-                                rol,
-                                if (contrasena.isBlank()) null else contrasena
-                            )
+                            val data = AdminUpdateUserData(nombre, correo, fecha, nivel, rol, if (contrasena.isBlank()) null else contrasena)
                             viewModel.guardarCambiosAdmin(usuarioId, data)
                         } else if (rolUsuarioLogueado == "moderador") {
                             val data = ModeratorUpdateUserData(nombre, fecha)
@@ -211,16 +186,12 @@ fun EditarUsuarioScreen(
                         }
                     },
                     enabled = editState !is EditarUsuarioUiState.Loading,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6D4C41))
                 ) {
                     Text("Guardar Cambios", color = Color.White)
                 }
             }
-
-            // Muestra un indicador de carga si está cargando o guardando
             if (editState is EditarUsuarioUiState.Loading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }

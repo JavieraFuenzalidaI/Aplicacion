@@ -7,6 +7,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,14 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.aplicacion.R
+import com.example.aplicacion.data.SesionManager
 
 @Composable
 fun AdminSesionIniciadaScreen(navController: NavHostController) {
     val context = LocalContext.current
-
+    val sesionManager = remember { SesionManager(context) }
     Box(modifier = Modifier.fillMaxSize()) {
-
-        // Fondo
         Image(
             painter = painterResource(id = R.drawable.fondo_sesion_iniciada_admin),
             contentDescription = "Fondo admin",
@@ -45,10 +45,7 @@ fun AdminSesionIniciadaScreen(navController: NavHostController) {
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF6D4C41)
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // ir a ver usuarios
             Button(
                 onClick = { navController.navigate("ver_usuarios") },
                 colors = ButtonDefaults.buttonColors(
@@ -59,10 +56,7 @@ fun AdminSesionIniciadaScreen(navController: NavHostController) {
             ) {
                 Text("Ver usuarios registrados")
             }
-
             Spacer(modifier = Modifier.height(10.dp))
-
-            // mascota del admin
             Button(
                 onClick = { navController.navigate("mascota_admin") },
                 colors = ButtonDefaults.buttonColors(
@@ -73,12 +67,12 @@ fun AdminSesionIniciadaScreen(navController: NavHostController) {
             ) {
                 Text("Ir a mascota")
             }
-
             Spacer(modifier = Modifier.height(10.dp))
-
-            // btn cerrar sesion
             Button(
-                onClick = { navController.navigate("login") },
+                onClick = {
+                    sesionManager.cerrarSesion()
+                    navController.navigate("login") { popUpTo(0) }
+                },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color(0xFF6D4C41)

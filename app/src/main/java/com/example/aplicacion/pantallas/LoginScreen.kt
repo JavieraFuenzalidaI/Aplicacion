@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,18 +37,17 @@ fun LoginScreen(navController: NavHostController) {
     val viewModel: LoginViewModel = viewModel()
     val loginState by viewModel.uiState.collectAsState()
 
-    // --- Efectos secundarios basados en el estado ---
     LaunchedEffect(loginState) {
         when (val state = loginState) {
             is LoginUiState.Success -> {
-
-                val usuario = state.loginResponse.usuario 
+                val usuario = state.loginResponse.usuario
+                val token = state.loginResponse.token
 
                 val sesionParaGuardar = when (usuario.rol) {
                     "admin" -> "admin"
                     else -> "${usuario.rol}/${usuario.id}"
                 }
-                sesionManager.guardarSesion(sesionParaGuardar)
+                sesionManager.guardarSesion(sesionParaGuardar, token)
 
                 Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
 
@@ -63,33 +61,26 @@ fun LoginScreen(navController: NavHostController) {
                 navController.navigate(rutaDestino) {
                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
-
                 viewModel.resetState()
-
             }
             is LoginUiState.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
-                viewModel.resetState() // Permitimos que el usuario reintente.
+                viewModel.resetState()
             }
-            else -> Unit // No hacemos nada en los estados Idle o Loading.
+            else -> Unit
         }
     }
 
-    // --- UI del Login ---
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        // Fondo
         Image(
             painter = painterResource(id = R.drawable.fondo_iniciar_sesion),
             contentDescription = "Fondo Login",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-
-        // Si el estado es Loading, mostramos una barra de progreso y oscurecemos el fondo.
         if (loginState is LoginUiState.Loading) {
             CircularProgressIndicator(modifier = Modifier.size(64.dp))
         } else {
-            // Si no está cargando, mostramos el formulario.
             LoginForm(navController, viewModel)
         }
     }
@@ -123,9 +114,7 @@ private fun LoginForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             keyboardActions = KeyboardActions(onNext = { passwordFocusRequest.requestFocus() })
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -138,9 +127,7 @@ private fun LoginForm(
             }),
             visualTransformation = PasswordVisualTransformation()
         )
-
         Spacer(modifier = Modifier.height(32.dp))
-
         Image(
             painter = painterResource(id = R.drawable.iniciar_sesion_btn),
             contentDescription = "Botón Iniciar sesión",
@@ -152,9 +139,7 @@ private fun LoginForm(
                 },
             contentScale = ContentScale.Fit
         )
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Text(
             text = "¿No tienes cuenta? Regístrate",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -175,6 +160,5 @@ private fun handleLoginClick(
         Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
         return
     }
-    // Para cualquier otro usuario, llamamos al ViewModel para que inicie la llamada a la API.
-    viewModel.iniciarSesion(email, password)
+    viewModel.iniciarSesion(email, password, context)
 }

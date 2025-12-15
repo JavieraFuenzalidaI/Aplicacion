@@ -12,14 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.lang.Exception
 
-// Estados para la lista de usuarios
 sealed class VerUsuariosUiState {
     object Loading : VerUsuariosUiState()
     data class Success(val usuarios: List<Usuario>) : VerUsuariosUiState()
     data class Error(val message: String) : VerUsuariosUiState()
 }
 
-// Estados para la pantalla de edición
 sealed class EditarUsuarioUiState {
     object Idle : EditarUsuarioUiState()
     object Loading : EditarUsuarioUiState()
@@ -51,7 +49,7 @@ class VerUsuariosViewModel(private val repository: UsuarioRepository) : ViewMode
         viewModelScope.launch {
             try {
                 repository.eliminarUsuario(id)
-                cargarUsuarios() // Recargamos la lista tras eliminar
+                cargarUsuarios()
             } catch (e: Exception) {
                 _uiState.value = VerUsuariosUiState.Error("Error al eliminar: ${e.message}")
             }

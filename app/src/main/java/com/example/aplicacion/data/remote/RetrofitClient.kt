@@ -1,28 +1,38 @@
 package com.example.aplicacion.data.remote
 
+import android.content.Context
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-object RetrofitClient {
+class RetrofitClient private constructor(context: Context) {
 
-    private const val BASE_URL = "http://3.84.192.34:3000/"
-
-    private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY
-    }
+    private val baseUrl = "http://3.82.171.204:3000/"
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(loggingInterceptor)
+        .addInterceptor(HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        })
+        .addInterceptor(AuthInterceptor(context))
         .build()
 
     val instance: ApiService by lazy {
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
+        Retrofit.Builder()
+            .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-        retrofit.create(ApiService::class.java)
+            .create(ApiService::class.java)
+    }
+
+    companion object {
+        @Volatile
+        private var INSTANCE: RetrofitClient? = null
+
+        fun getInstance(context: Context): RetrofitClient =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RetrofitClient(context.applicationContext).also { INSTANCE = it }
+            }
     }
 }

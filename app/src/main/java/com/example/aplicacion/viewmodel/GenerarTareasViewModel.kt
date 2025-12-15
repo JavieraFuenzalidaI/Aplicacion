@@ -10,10 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-// --- ESTADO DE LA UI ---
-
 sealed interface GenerarTareasUiState {
-    object Idle : GenerarTareasUiState // Estado inicial
+    object Idle : GenerarTareasUiState
     object Loading : GenerarTareasUiState
     data class Success(val tareas: List<Tarea>) : GenerarTareasUiState
     data class Error(val message: String) : GenerarTareasUiState
@@ -27,7 +25,6 @@ class GenerarTareasViewModel : ViewModel() {
     fun generarTareas(promptUsuario: String, idUsuario: Int) {
         viewModelScope.launch {
             _uiState.value = GenerarTareasUiState.Loading
-
             val promptCompleto = """
                 Eres un asistente de productividad para la app TaskiPet. 
                 El usuario quiere que le ayudes con la siguiente tarea: '$promptUsuario'.
@@ -38,7 +35,6 @@ class GenerarTareasViewModel : ViewModel() {
 
             try {
                 val response = GeminiClient.generativeModel.generateContent(promptCompleto)
-                
                 val responseText = response.text
                 if (responseText != null) {
                     val tareasGeneradas = parseTareasFromJson(responseText, idUsuario)
@@ -58,7 +54,7 @@ class GenerarTareasViewModel : ViewModel() {
             val gson = Gson()
             val tipoLista = object : TypeToken<List<TareaJson>>() {}.type
             val tareasJson: List<TareaJson> = gson.fromJson(jsonString, tipoLista)
-            
+
             tareasJson.map {
                 Tarea(
                     id = 0,
@@ -77,7 +73,8 @@ class GenerarTareasViewModel : ViewModel() {
     private data class TareaJson(
         val descripcion: String,
         val puntos: Int,
-        val usuario_id: Int)
+        val usuario_id: Int
+    )
 
     fun resetState() {
         _uiState.value = GenerarTareasUiState.Idle
